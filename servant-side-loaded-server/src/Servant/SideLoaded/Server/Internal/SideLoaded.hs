@@ -1,12 +1,4 @@
-module Servant.SideLoaded.Server.Internal.SideLoaded
-    ( NamedDependency
-    , Inflatable(..)
-    , DependencyList(NilDeps)
-    , HasDependencies(..)
-    , SideLoaded
-    , inflate
-    , (&:)
-    ) where
+module Servant.SideLoaded.Server.Internal.SideLoaded where
 
 import Data.Aeson (ToJSON(..), Value, (.=), object)
 import Data.Kind
