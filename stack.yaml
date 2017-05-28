@@ -1,9 +1,10 @@
 resolver: lts-8.13
 
 packages:
-- './servant-side-loaded-server'
-- './servant-side-loaded'
+- './servant-zeppelin-server'
+- './servant-zeppelin'
 
 extra-deps:
-- servant-0.10
-- servant-server-0.10
+  - servant-0.10
+  - servant-server-0.10
+  - servant-swagger-0.10

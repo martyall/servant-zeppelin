@@ -21,6 +21,7 @@ module Servant.SideLoaded.SideLoadingSpec (spec) where
 import Servant.SideLoaded.Server.Internal.SideLoaded
 import Data.Aeson (ToJSON(..), FromJSON(..), Value(..), encode, decode, (.:))
 import Data.Maybe (isJust)
+import Data.Proxy
 import GHC.Generics (Generic)
 import GHC.TypeLits ()
 import Test.Hspec
@@ -30,8 +31,9 @@ spec :: Spec
 spec = do
   describe "it should inflate albums" $ do
     it "can print the correct result" $ do
-      serializedAlbum <- fmap (encode . toJSON) . inflate $ album
-      let (mpair :: Maybe (Person, [Photo])) = decode serializedAlbum
+      (inflatedAlbum :: _) <- inflate album
+      let serializedAlbum = encode . toJSON $ inflatedAlbum
+          (mpair :: Maybe (Person, [Photo])) = decode serializedAlbum
       mpair `shouldSatisfy` isJust
       let (Just(o, ps)) = mpair
       o `shouldBe` john
@@ -43,6 +45,7 @@ spec = do
 newtype PhotoId = PhotoId Int deriving (Eq, Show, Num, ToJSON, FromJSON)
 
 type instance NamedDependency [Photo] = "photos"
+type instance NamedDependency [PhotoId] = "photoIds"
 
 data Photo =
   Photo { photoId :: PhotoId
@@ -57,7 +60,8 @@ instance FromJSON Photo
 photos :: [Photo]
 photos = [Photo 1 "At the Beach" 1 1, Photo 2 "In the Mountains" 1 1]
 
-instance Inflatable IO [PhotoId] [Photo] where
+instance Inflatable IO [PhotoId] where
+  type Inflated IO [PhotoId] = [Photo]
   inflator = const $ return photos
 
 -- | Person
@@ -77,7 +81,8 @@ instance FromJSON Person
 john :: Person
 john = Person 1 "Johnathon"
 
-instance Inflatable IO PersonId Person where
+instance Inflatable IO PersonId where
+  type Inflated IO PersonId = Person
   inflator = const $ return john
 
 -- | Albums
@@ -93,9 +98,8 @@ data Album =
 
 instance ToJSON Album
 
-instance HasDependencies IO Album [Person, [Photo]] where
-  type DependencyBase Album = [PersonId, [PhotoId]]
-  getDependencies (Album _ _ owner pIds) = owner &: pIds &: NilDeps
+instance HasDependencies IO Album '[PersonId, [PhotoId]] where
+  getDependencies (Album _ _ owner pIds) = ((owner &: pIds &: NilDeps) :: _)
 
 album :: Album
 album = Album 1 "Vacations" 1 [1,2]

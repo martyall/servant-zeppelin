@@ -1,4 +1,4 @@
-name:                servant-side-loaded
+name:                servant-zeppelin
 version:             0.1.0.0
 -- synopsis:
 -- description:
@@ -15,9 +15,14 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Servant.SideLoaded
+  exposed-modules:     Servant.Zeppelin
   build-depends:       base >= 4.7 && < 5
+                     , singletons
   default-language:    Haskell2010
+  default-extensions:  GADTs
+                     , KindSignatures
+                     , DataKinds
+                     , TypeOperators
 
 source-repository head
   type:     git
