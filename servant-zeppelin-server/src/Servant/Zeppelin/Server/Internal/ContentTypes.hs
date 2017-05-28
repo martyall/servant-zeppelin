@@ -9,7 +9,7 @@ import Data.Proxy
 import Data.Singletons.TypeLits
 import Data.Text (Text, pack)
 
-import Servant.Zeppelin
+import Servant.Zeppelin.Server.Internal.Types
 
 --------------------------------------------------------------------------------
 -- | JSON Instances

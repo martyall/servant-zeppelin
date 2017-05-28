@@ -1,11 +1,11 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module Servant.Zeppelin.Server.Internal where
 
 import Data.Maybe
 import Data.Proxy
-import qualified Data.ByteString.Char8 as C8
 import Data.Singletons.TypeLits
 import Data.List (lookup)
 import Servant.Server.Internal
@@ -24,23 +24,23 @@ import Servant.Zeppelin.Server.Internal.Types
 --------------------------------------------------------------------------------
 
 -- | Bind an action after the handler has run
-bindAction :: ToHandler m
-           => Delayed env (Handler a)
+bindAction :: Delayed env (Handler a)
+           -> m :~> Handler
            -> (a -> m b)
            -> Delayed env (Handler b)
-bindAction Delayed{..} f =
+bindAction Delayed{..} phi f =
   Delayed
     { serverD = \c p a b r -> case serverD c p a b r of
-        Route m -> Route $ m >>= (($$) toServantHandler) . f
+        Route m -> Route $ m >>= (($$) phi) . f
         Fail e -> Fail e
         FailFatal e -> FailFatal e
     , ..
     }
 
 -- | This is just copied from the HasServer instance for QueryFlag.
-parseSideLoadedParam :: String -> Request -> Bool
-parseSideLoadedParam p r =
-  let paramname = C8.pack p
+parseSideLoadedParam :: Request -> Bool
+parseSideLoadedParam r =
+  let paramname = "sideload"
   in case lookup paramname (queryString r) of
         Just Nothing  -> True  -- param is there, with no value
         Just (Just v) -> examine v -- param with a value
@@ -58,18 +58,18 @@ methodRouterSideLoad :: ( AllCTRender ctypes (SideLoaded a deps)
                         , ToHandler m
                         , Monad m
                         )
-                     => String -- ^ the name of the query flag
-                     -> Proxy deps
+                     => Proxy deps
                      -> Proxy m
+                     -> m :~> Handler
                      -> Method -> Proxy ctypes -> Status
                      -> Delayed env (Handler a)
                      -> Router env
-methodRouterSideLoad slParam _ _ method proxy status action =
+methodRouterSideLoad _ _ nat method proxy status action =
   leafRouter $ \env request respond ->
     let accH = fromMaybe ct_wildcard $ lookup hAccept $ requestHeaders request
-        shouldInflate = parseSideLoadedParam slParam request
+        shouldInflate = parseSideLoadedParam request
         inflationAction = if shouldInflate then inflate else noInflate
-    in runAction (action `bindAction` inflationAction
+    in runAction (bindAction action nat inflationAction
                          `addMethodCheck` methodCheck method request
                          `addAcceptCheck ` acceptCheck proxy accH
                  ) env request respond $ \ output -> do
@@ -81,18 +81,18 @@ methodRouterSideLoad slParam _ _ method proxy status action =
 --------------------------------------------------------------------------------
 
 instance ( ReflectMethod method, KnownNat status
-         , KnownSymbol s
          , AllCTRender ctypes (SideLoaded a deps)
          , HasDependencies m a deps
          , bs ~ DependencyBase a
          , CanInflate m bs deps
          , ToHandler m
+         , HasContextEntry context (m :~> Handler)
          , Monad m
-         ) => HasServer (Verb method status ctypes a :> SideLoad s) context where
+         ) => HasServer (Verb method status ctypes a :> SideLoad deps) context where
 
-  type ServerT (Verb method status ctypes a :> SideLoad s) m = m a
+  type ServerT (Verb method status ctypes a :> SideLoad deps) m = m a
 
-  route Proxy _ = methodRouterSideLoad qFlag (Proxy @deps) (Proxy @m) method (Proxy @ctypes) status
+  route Proxy context = methodRouterSideLoad (Proxy @deps) (Proxy @m) phi method (Proxy @ctypes) status
     where method = reflectMethod (Proxy @method)
           status = toEnum . fromInteger $ natVal (Proxy @status)
-          qFlag = symbolVal $ Proxy @s
+          phi = getContextEntry context

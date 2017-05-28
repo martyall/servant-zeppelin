@@ -4,6 +4,7 @@ module Servant.Zeppelin.Server
   , Inflatable(..)
   , HasDependencies(..)
   , (&:)
+  , DependencyList(NilDeps)
   ) where
 
 import Servant.Zeppelin.Server.Internal ()

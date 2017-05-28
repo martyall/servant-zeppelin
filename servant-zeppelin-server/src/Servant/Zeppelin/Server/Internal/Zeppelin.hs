@@ -3,7 +3,6 @@ module Servant.Zeppelin.Server.Internal.Zeppelin where
 
 import Data.Functor.Identity (Identity(..))
 
-import Servant.Zeppelin
 import Servant.Zeppelin.Server.Internal.Types
 
 --------------------------------------------------------------------------------

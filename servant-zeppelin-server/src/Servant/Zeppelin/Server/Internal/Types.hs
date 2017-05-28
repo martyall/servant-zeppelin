@@ -3,18 +3,27 @@ module Servant.Zeppelin.Server.Internal.Types where
 import Data.Functor.Identity
 import Data.Kind
 import Servant.Utils.Enter
+--import Data.Constraint
 import Data.Singletons (Apply, type (~>))
 import           Servant.Server.Internal.Handler
 
 
-import Servant.Zeppelin
+--------------------------------------------------------------------------------
+-- | Dependency Lists
+--------------------------------------------------------------------------------
+data DependencyList :: (* -> *) -> [*] -> [*] -> * where
+  IgnoreDeps :: DependencyList m as bs
+  NilDeps :: DependencyList m '[] '[]
+  (:&:) :: b -> DependencyList m bs fs -> DependencyList m (b:bs) (f:fs)
+
+data SideLoaded a (deps :: [*]) = SideLoaded a (DependencyList Identity deps deps)
 
 --------------------------------------------------------------------------------
 -- | Inflatables
 --------------------------------------------------------------------------------
 
 -- | Inflatable represents an entity which can be expanded inside of a context @m@.
-class Inflatable m base full | base m -> full, full base -> m where
+class Inflatable m base full | base m -> full where
   inflator :: base -> m full
 
 -- | Anything can be expanded into itself in the trivial context
@@ -23,9 +32,11 @@ instance Inflatable Identity base base where
 
 -- | Indicate that a type has dependencies, and supply the uninflated types
 -- (order matters here).
-class HasDependencies m a fs | a -> fs, a fs -> m where
+class HasDependencies m a fs | m a -> fs where
   type DependencyBase a :: [*]
-  getDependencies :: a -> DependencyList m (DependencyBase a) fs
+  getDependencies :: CanInflate m (DependencyBase a) fs
+                  => a
+                  -> DependencyList m (DependencyBase a) fs
 
 --------------------------------------------------------------------------------
 -- | Servant Handler
