@@ -4,7 +4,6 @@ module Servant.Zeppelin.Server.Internal.ContentTypes where
 
 import           Data.Aeson
 import           Data.Functor.Identity
-import           Data.Kind
 import           Data.Proxy
 import           Data.Singletons.TypeLits
 import           Data.Text                              (Text, pack)
@@ -15,9 +14,6 @@ import           Servant.Zeppelin.Types
 --------------------------------------------------------------------------------
 -- | JSON Instances
 --------------------------------------------------------------------------------
-
--- | Labels for the objects created in the dependency mapping. Useful for JSON instances.
-type family NamedDependency (a :: Type) :: Symbol
 
 -- | A helper class for the JSON instances
 class ToKeyValueList a where

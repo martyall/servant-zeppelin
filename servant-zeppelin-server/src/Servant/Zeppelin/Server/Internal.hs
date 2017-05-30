@@ -89,9 +89,9 @@ instance ( ReflectMethod method, KnownNat status
          , AllCTRender ctypes (SideLoaded a fs)
          , Monad t
          , HasContextEntry context (t :~> Handler)
-         ) => HasServer (Verb method status ctypes a :> SideLoad) context where
+         ) => HasServer (Verb method status ctypes a :> SideLoad fs) context where
 
-  type ServerT (Verb method status ctypes a :> SideLoad) m = m a
+  type ServerT (Verb method status ctypes a :> SideLoad fs) m = m a
 
   route Proxy context = methodRouterSideLoad (Proxy @t) (Proxy @bs) phi method (Proxy @ctypes) status
     where method = reflectMethod (Proxy @method)

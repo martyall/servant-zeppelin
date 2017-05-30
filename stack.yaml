@@ -1,10 +1,11 @@
 resolver: lts-8.13
 
 packages:
-- './servant-zeppelin-server'
 - './servant-zeppelin'
+- './servant-zeppelin-server'
+- './servant-zeppelin-swagger'
 
 extra-deps:
-  - servant-0.10
-  - servant-server-0.10
-  - servant-swagger-0.10
+ - servant-0.10
+ - servant-server-0.10
+ - servant-swagger-1.1.2.1

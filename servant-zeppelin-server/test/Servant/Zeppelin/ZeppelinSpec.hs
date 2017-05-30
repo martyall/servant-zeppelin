@@ -82,7 +82,9 @@ zeppelinSpec
 -- | Application
 --------------------------------------------------------------------------------
 
-type API = "albums" :> Capture "albumId" AlbumId :> Get '[JSON] Album :> SideLoad
+type API = "albums" :> Capture "albumId" AlbumId
+                    :> Get '[JSON] Album
+                    :> SideLoad '[Person, [Photo]]
 
 newtype QueryError = LookupError String
 

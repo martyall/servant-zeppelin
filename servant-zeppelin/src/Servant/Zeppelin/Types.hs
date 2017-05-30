@@ -24,6 +24,9 @@ data DependencyList :: (* -> *) -> [*] -> [*] -> * where
 
 infixr 5 &:
 
+-- | Labels for the objects created in the dependency mapping. Useful for JSON instances.
+type family NamedDependency (a :: Type) :: Symbol
+
 data SideLoaded a (deps :: [*]) = SideLoaded a (DependencyList Identity deps deps)
 
 -- | Inflatable represents an entity which can be expanded inside of a context @m@.
