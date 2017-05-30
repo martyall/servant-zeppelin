@@ -65,6 +65,8 @@ test-suite servant-zeppelin-server-test
   build-depends:       base
                      , hspec
                      , aeson
+                     , http-client
+                     , http-types
                      , mtl
                      , lens
                      , lens-aeson

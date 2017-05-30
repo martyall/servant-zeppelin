@@ -17,8 +17,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Servant.Zeppelin.ZeppelinSpec (spec) where
+import           Network.HTTP.Types                  (Status, status200,
+                                                      status404)
+import qualified Network.HTTP.Client as HCli
 
-import Control.Lens ((^?))
+import Control.Lens ((^?), (^.))
 import Control.Monad.IO.Class
 import Control.Monad.Except
 import Data.Monoid
@@ -27,7 +30,7 @@ import           Data.Aeson.Lens
 
 import Data.String.Conversions
 import           Network.Wai.Handler.Warp            (testWithApplication)
-import           Network.Wreq                        (defaults, getWith, responseBody)
+import           Network.Wreq                        (defaults, getWith, responseBody, responseStatus)
 
 import qualified Data.List as L
 import GHC.Generics (Generic)
@@ -50,17 +53,35 @@ zeppelinSpec
   = describe "Can sideload album data based on query flag"
   $ around (testWithApplication . return $ app) $ do
 
-    it "can side load data in the presence of the query flag" $ \port -> property $
-                                                                \(aid :: AlbumId) -> do
+    it "can side load inflated data in the presence of the query flag" $ \port -> property $
+                                                                         \(aid :: AlbumId) -> do
       let album = getAlbumById aid
           (AlbumId aidInt) = aid
           path = "/albums/" <> show aidInt
       resp <- getWith defaults $ url (path <> "?sideload") port
-      resp ^? responseBody . key "data" . _JSON `shouldBe` getAlbumById aid
+      resp ^? responseBody . key "data" . _JSON `shouldBe` album
       resp ^? responseBody . key "dependencies" . key "person" . _JSON
         `shouldBe` (getPersonById . albumOwner =<< album)
       resp ^? responseBody . key "dependencies" . key "photos" . _JSON
         `shouldBe` (getPhotosByIds . albumPhotos <$> album)
+
+    it "can side load normal data in the absense of the query flag" $ \port -> property $
+                                                                      \(aid :: AlbumId) -> do
+      let album = getAlbumById aid
+          (AlbumId aidInt) = aid
+          path = "/albums/" <> show aidInt
+      resp <- getWith defaults $ url path port
+      resp ^? responseBody . _JSON `shouldBe` album
+
+    it "will throw an appropriate error for a missing dependency when sideloading" $ \port -> do
+      let path = "/albums/4"
+      getWith defaults (url (path <> "?sideload") port) `shouldHTTPErrorWith` status404
+
+    it "doesn't care about missing dependency if not side loading" $ \port -> do
+      let path = "/albums/4"
+      resp <- getWith defaults (url path port)
+      resp ^. responseStatus `shouldBe` status200
+
 
 
 --------------------------------------------------------------------------------
@@ -99,6 +120,12 @@ app = serveWithContext (Proxy @API) ctxt server
 
 url :: String -> Int -> String
 url path port = "http://localhost:" <> show port <> path
+
+shouldHTTPErrorWith :: IO a -> Status -> Expectation
+shouldHTTPErrorWith act stat = act `shouldThrow` \e -> case e of
+  HCli.HttpExceptionRequest _ (HCli.StatusCodeException resp _)
+    -> HCli.responseStatus resp == stat
+  _ -> False
 
 --------------------------------------------------------------------------------
 -- | Data
@@ -186,6 +213,7 @@ albumTable :: [Album]
 albumTable = [ Album 1 "Vacations" 1 [1,2]
              , Album 2 "In the City" 1 [3]
              , Album 3 "Howl" 2 [4]
+             , Album 4 "Lost Memories" 3 [1,3] -- person foreign key error
              ]
 
 getAlbumById :: AlbumId -> Maybe Album
