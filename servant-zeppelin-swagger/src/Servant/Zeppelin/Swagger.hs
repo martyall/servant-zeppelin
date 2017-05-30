@@ -1,7 +1,7 @@
 module Servant.Zeppelin.Swagger where
 
 import Control.Lens (mapped, (%~), (.~), (?~), (&), (^.), (^?))
-import Data.Aeson (Value(Object), object, (.=))
+import Data.Aeson (Value(Object), object, (.=), ToJSON(..))
 import Data.Monoid ((<>))
 import Control.Monad
 import qualified Data.HashMap.Strict.InsOrd as O (insert, member, empty, fromList)
@@ -97,9 +97,18 @@ instance {-# OVERLAPPABLE #-}
          ( ToSchema a
          , ToDependencySchema deps
          , AllAccept cs
-         , Elem JSON cs ~ True
          , KnownNat status
          , SwaggerMethod method
          )
   => HasSwagger (Verb method status cs a :> SideLoad deps) where
-  toSwagger _ = toSwagger $ Proxy @(Verb method status cs (SideLoaded a deps))
+  toSwagger _ =
+    (toSwagger $ Proxy @(Verb method status cs (SideLoaded a deps)))
+      & addParam param
+      where
+      param = mempty
+        & name .~ "sideload"
+        & schema .~ ParamOther (mempty
+            & in_ .~ ParamQuery
+            & allowEmptyValue ?~ True
+            & paramSchema .~ (toParamSchema (Proxy :: Proxy Bool)
+                & default_ ?~ toJSON False))
