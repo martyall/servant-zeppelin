@@ -8,6 +8,7 @@ import qualified Data.HashMap.Strict.InsOrd as O (insert, member, empty, fromLis
 import qualified Data.HashMap.Lazy as U (HashMap, insert)
 import Data.Kind
 import Data.Proxy
+import Data.Promotion.Prelude hiding ((:>))
 import Data.Singletons.TypeLits
 import Data.Swagger
 import Data.Swagger.Declare
@@ -51,7 +52,7 @@ instance ( ToDependencySchema deps
             Just v -> case ex of
               (Just (Object hm)) -> Just . Object $ U.insert k v hm
               -- this actually can't happen.
-              _ -> Nothing
+              _ -> ex
 
 instance ( ToSchema a
          , ToDependencySchema deps
@@ -96,6 +97,7 @@ instance {-# OVERLAPPABLE #-}
          ( ToSchema a
          , ToDependencySchema deps
          , AllAccept cs
+         , Elem JSON cs ~ True
          , AllToResponseHeader hs
          , KnownNat status
          , SwaggerMethod method
