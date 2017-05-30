@@ -7,6 +7,7 @@ import           Data.Functor.Identity
 import           Data.Proxy
 import           Data.Singletons.TypeLits
 import           Data.Text                              (Text, pack)
+import           Servant.API.ContentTypes
 
 import           Servant.Zeppelin.Server.Internal.Types
 import           Servant.Zeppelin.Types
@@ -46,3 +47,9 @@ instance {-# OVERLAPPABLE #-}
       deps' -> object [ "data" .= toJSON _data
                       , "dependencies" .= toJSON deps'
                       ]
+
+instance {-# OVERLAPPABLE #-} MimeRender ctype a => MimeRender ctype (SideLoaded a deps) where
+  mimeRender c (SideLoaded a _) = mimeRender c a
+
+instance {-# OVERLAPPING #-} ToJSON (SideLoaded a deps) => MimeRender JSON (SideLoaded a deps) where
+  mimeRender _ = encode

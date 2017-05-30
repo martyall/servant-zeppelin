@@ -16,7 +16,7 @@
 
 module Servant.Zeppelin.ZeppelinSpec (spec) where
 
-import           Control.Lens             ((^.), (^?))
+import           Control.Lens             ((^.), (^?), (.~), (&))
 import           Control.Monad.Except
 import           Data.Aeson
 import           Data.Aeson.Lens
@@ -28,7 +28,7 @@ import qualified Network.HTTP.Client      as HCli
 import           Network.HTTP.Types       (Status, status200, status404)
 import           Network.Wai.Handler.Warp (testWithApplication)
 import           Network.Wreq             (defaults, getWith, responseBody,
-                                           responseStatus)
+                                           responseStatus, header)
 import           Servant
 import           Test.Hspec
 import           Test.QuickCheck
@@ -40,6 +40,7 @@ import           Servant.Zeppelin.Server
 spec :: Spec
 spec = do
   zeppelinSpec
+  contentTypeSpec
   return ()
 
 zeppelinSpec :: Spec
@@ -76,14 +77,40 @@ zeppelinSpec
       resp <- getWith defaults (url path port)
       resp ^. responseStatus `shouldBe` status200
 
+contentTypeSpec :: Spec
+contentTypeSpec
+  = describe "Can handle content types appropriately"
+  $ around (testWithApplication . return $ app) $ do
 
+-- the use of defaults above already tests the wildcard case.
+    it "can handle application/json" $ \port -> property $
+                                       \(aid :: AlbumId) -> do
+
+      let album = getAlbumById aid
+          (AlbumId aidInt) = aid
+          path = "/albums/" <> show aidInt
+          options = defaults & header "Accept" .~ ["application/json"]
+      resp <- getWith options $ url (path <> "?sideload") port
+      resp ^? responseBody . key "data" . _JSON `shouldBe` album
+      resp ^? responseBody . key "dependencies" . key "person" . _JSON
+        `shouldBe` (getPersonById . albumOwner =<< album)
+      resp ^? responseBody . key "dependencies" . key "photos" . _JSON
+        `shouldBe` (getPhotosByIds . albumPhotos <$> album)
+
+    it "can handle other content types" $ \port -> do
+      let options = defaults & header "Accept" .~ ["text/plain;charset=utf-8"]
+          path = "/albums/1"
+      respWithParam <- getWith options $ url (path <> "?sideload") port
+      respWithParam ^? responseBody `shouldBe` Just "Album"
+      respWithoutParam <- getWith options $ url path port
+      respWithoutParam ^? responseBody `shouldBe` Just "Album"
 
 --------------------------------------------------------------------------------
 -- | Application
 --------------------------------------------------------------------------------
 
 type API = "albums" :> Capture "albumId" AlbumId
-                    :> Get '[JSON] Album
+                    :> Get '[JSON, PlainText] Album
                     :> SideLoad '[Person, [Photo]]
 
 newtype QueryError = LookupError String
@@ -217,5 +244,8 @@ getAlbumById aid = L.find (\album -> albumId album == aid) albumTable
 
 instance HasDependencies DB Album '[PersonId, [PhotoId]] where
   getDependencies (Album _ _ owner pIds) = owner &: pIds &: NilDeps
+
+instance MimeRender PlainText Album where
+  mimeRender _ _ = "Album"
 
 {-# ANN module ("HLint: ignore Reduce duplication" :: String) #-}

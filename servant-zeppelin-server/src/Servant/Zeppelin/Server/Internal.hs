@@ -41,8 +41,8 @@ bindAction Delayed{..} phi f =
     }
 
 -- | This is just copied from the HasServer instance for QueryFlag.
-parseSideLoadedParam :: Request -> Bool
-parseSideLoadedParam r =
+checkSideLoadedParam :: Request -> Bool
+checkSideLoadedParam r =
   let paramname = "sideload"
   in case lookup paramname (queryString r) of
         Just Nothing  -> True  -- param is there, with no value
@@ -69,7 +69,7 @@ methodRouterSideLoad :: ( AllCTRender ctypes (SideLoaded a fs)
 methodRouterSideLoad pm pdeps nat method proxy status action =
   leafRouter $ \env request respond ->
     let accH = fromMaybe ct_wildcard $ lookup hAccept $ requestHeaders request
-        shouldInflate = parseSideLoadedParam request
+        shouldInflate = checkSideLoadedParam request && acceptsJSON accH
         inflationAction = if shouldInflate then inflate pm pdeps else noInflate
     in runAction (bindAction action nat inflationAction
                          `addMethodCheck` methodCheck method request
@@ -77,6 +77,8 @@ methodRouterSideLoad pm pdeps nat method proxy status action =
                  ) env request respond $ \ output -> do
          let handleA = handleAcceptH proxy (AcceptHeader accH) output
          processMethodRouter handleA status method Nothing request
+  where
+    acceptsJSON ah = ah == ct_wildcard || ah == "application/json"
 
 --------------------------------------------------------------------------------
 -- | HasServer instance
