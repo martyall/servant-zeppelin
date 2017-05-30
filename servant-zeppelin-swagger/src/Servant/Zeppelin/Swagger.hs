@@ -98,9 +98,8 @@ instance {-# OVERLAPPABLE #-}
          , ToDependencySchema deps
          , AllAccept cs
          , Elem JSON cs ~ True
-         , AllToResponseHeader hs
          , KnownNat status
          , SwaggerMethod method
          )
-  => HasSwagger (Verb method status cs (Headers hs a) :> SideLoad deps) where
+  => HasSwagger (Verb method status cs a :> SideLoad deps) where
   toSwagger _ = toSwagger $ Proxy @(Verb method status cs (SideLoaded a deps))
