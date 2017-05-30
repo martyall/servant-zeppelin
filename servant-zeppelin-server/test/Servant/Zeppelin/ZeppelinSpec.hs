@@ -28,7 +28,7 @@ import qualified Network.HTTP.Client      as HCli
 import           Network.HTTP.Types       (Status, status200, status404)
 import           Network.Wai.Handler.Warp (testWithApplication)
 import           Network.Wreq             (defaults, getWith, responseBody,
-                                           responseStatus, header)
+                                           responseStatus, header, param)
 import           Servant
 import           Test.Hspec
 import           Test.QuickCheck
@@ -53,7 +53,8 @@ zeppelinSpec
       let album = getAlbumById aid
           (AlbumId aidInt) = aid
           path = "/albums/" <> show aidInt
-      resp <- getWith defaults $ url (path <> "?sideload") port
+          options = defaults & param "sideload" .~ ["true"]
+      resp <- getWith options $ url path port
       resp ^? responseBody . key "data" . _JSON `shouldBe` album
       resp ^? responseBody . key "dependencies" . key "person" . _JSON
         `shouldBe` (getPersonById . albumOwner =<< album)
@@ -70,7 +71,8 @@ zeppelinSpec
 
     it "will throw an appropriate error for a missing dependency when sideloading" $ \port -> do
       let path = "/albums/4"
-      getWith defaults (url (path <> "?sideload") port) `shouldHTTPErrorWith` status404
+          options = defaults & param "sideload" .~ ["true"]
+      getWith options (url path port) `shouldHTTPErrorWith` status404
 
     it "doesn't care about missing dependency if not side loading" $ \port -> do
       let path = "/albums/4"
@@ -89,8 +91,10 @@ contentTypeSpec
       let album = getAlbumById aid
           (AlbumId aidInt) = aid
           path = "/albums/" <> show aidInt
-          options = defaults & header "Accept" .~ ["application/json"]
-      resp <- getWith options $ url (path <> "?sideload") port
+          options = defaults
+            & header "Accept" .~ ["application/json"]
+            & param "sideload" .~ ["true"]
+      resp <- getWith options $ url path port
       resp ^? responseBody . key "data" . _JSON `shouldBe` album
       resp ^? responseBody . key "dependencies" . key "person" . _JSON
         `shouldBe` (getPersonById . albumOwner =<< album)
@@ -98,9 +102,11 @@ contentTypeSpec
         `shouldBe` (getPhotosByIds . albumPhotos <$> album)
 
     it "can handle other content types" $ \port -> do
-      let options = defaults & header "Accept" .~ ["text/plain;charset=utf-8"]
+      let options = defaults
+            & header "Accept" .~ ["text/plain;charset=utf-8"]
+            & param "sideload" .~ ["true"]
           path = "/albums/1"
-      respWithParam <- getWith options $ url (path <> "?sideload") port
+      respWithParam <- getWith options $ url path port
       respWithParam ^? responseBody `shouldBe` Just "Album"
       respWithoutParam <- getWith options $ url path port
       respWithoutParam ^? responseBody `shouldBe` Just "Album"
