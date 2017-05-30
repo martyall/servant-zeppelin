@@ -28,6 +28,7 @@ instance ToKeyValueList (DependencyList Identity '[] '[]) where
 instance ( ToJSON d
          , KnownSymbol (NamedDependency d)
          , ToKeyValueList (DependencyList Identity ds ds)
+         , n ~ 'S (Length ds)
          ) => ToKeyValueList (DependencyList Identity (d:ds) (d:ds)) where
   toKeyValueList IgnoreDeps = []
   toKeyValueList (a :&: rest) =

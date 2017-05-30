@@ -1,8 +1,7 @@
-
 module Servant.Zeppelin.Server.Internal.Zeppelin where
 
+import Data.Proxy
 import Data.Functor.Identity (Identity(..))
-
 import Servant.Zeppelin.Server.Internal.Types
 
 --------------------------------------------------------------------------------
@@ -23,30 +22,31 @@ infixr 5 &:
 ---- | Side Loading
 ----------------------------------------------------------------------------------
 
--- | Run the inflator in a monadic sequence.
-sequenceDependencyList :: ( Monad m
-                          , CanInflate m bs fs
-                          )
+sequenceDependencyList :: Monad m
                        => DependencyList m bs fs
+                       -> Inflators m bs fs
                        -> m (DependencyList Identity fs fs)
-sequenceDependencyList IgnoreDeps = return IgnoreDeps
-sequenceDependencyList NilDeps = return NilDeps
-sequenceDependencyList (b :&: rest) = do
-  f <- inflator b
-  fs <- sequenceDependencyList rest
-  return (f :&: fs)
+sequenceDependencyList IgnoreDeps _ = return IgnoreDeps
+sequenceDependencyList NilDeps NilInflators = return NilDeps
+sequenceDependencyList (b :&: bs) (i :^ is) = do
+  f <- i b
+  fs <- sequenceDependencyList bs is
+  return $ f :&: fs
 
 -- | Run the inflators and wrap in the SideLoaded type.
 inflate :: ( HasDependencies m a fs
            , bs ~ DependencyBase a
-           , CanInflate m bs fs
+           , CanInflate m n bs fs
            , Monad m
            )
-        => a
+        => Proxy m
+        -> Proxy fs
+        -> a
         -> m (SideLoaded a fs)
-inflate value =
+inflate pm pfs value =
   let dependencies = getDependencies value
-  in sequenceDependencyList dependencies >>= \deps -> return $ SideLoaded value deps
+      inflators = getInflators pm pfs
+  in sequenceDependencyList dependencies inflators >>= \deps -> return $ SideLoaded value deps
 
 -- | Ignore the inflation step.
 noInflate :: forall m fs a . Monad m => a -> m (SideLoaded a fs)

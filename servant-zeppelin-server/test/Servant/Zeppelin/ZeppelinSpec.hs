@@ -18,14 +18,23 @@
 
 module Servant.Zeppelin.ZeppelinSpec (spec) where
 
+import Control.Lens ((^?))
 import Control.Monad.IO.Class
 import Control.Monad.Except
 import Data.Monoid
 import Data.Aeson
+import           Data.Aeson.Lens
+
+import Data.String.Conversions
+import           Network.Wai.Handler.Warp            (testWithApplication)
+import           Network.Wreq                        (defaults, getWith, responseBody)
+
 import qualified Data.List as L
 import GHC.Generics (Generic)
 import Servant
+-- import Servant.Utils.Enter
 import Test.Hspec
+import Test.QuickCheck
 
 import Servant.Zeppelin
 import Servant.Zeppelin.Server
@@ -33,7 +42,24 @@ import Servant.Zeppelin.Server
 
 spec :: Spec
 spec = do
+  zeppelinSpec
   return ()
+
+zeppelinSpec :: Spec
+zeppelinSpec
+  = describe "Can sideload album data based on query flag"
+  $ around (testWithApplication . return $ app) $ do
+
+    it "can side load data in the presence of the query flag" $ \port -> property $
+                                                                \(aid :: AlbumId) -> do
+      let album = getAlbumById aid
+          (AlbumId aidInt) = aid
+          path = "/albums/" <> show aidInt
+      resp <- getWith defaults $ url (path <> "?sideload") port
+      resp ^? responseBody . key "data" . _JSON `shouldBe` getAlbumById aid
+      resp ^? responseBody . key "dependencies" . key "person" . _JSON
+        `shouldBe` (getPersonById . albumOwner =<< album)
+
 
 --------------------------------------------------------------------------------
 -- | Application
@@ -54,6 +80,23 @@ albumHandler aid =
   case L.find (\album -> albumId album == aid) albumTable of
     Nothing -> throwError . LookupError $ "Could not find album with id: " <> show aid
     Just album -> return album
+
+phi :: AppHandler :~> Handler
+phi = NT $ \ha -> do
+  ea <- liftIO . runExceptT . runAppHandler $ ha
+  case ea of
+    Left (LookupError msg) -> throwError err404 {errBody = cs msg}
+    Right a -> return a
+
+app :: Application
+app = serveWithContext (Proxy @API) ctxt (enter phi server)
+  where
+    ctxt :: Context '[AppHandler :~> Handler]
+    ctxt = phi :. EmptyContext
+
+
+url :: String -> Int -> String
+url path port = "http://localhost:" <> show port <> path
 
 --------------------------------------------------------------------------------
 -- | Data
@@ -82,8 +125,11 @@ photosTable = [ Photo 1 "At the Beach." 1
               , Photo 4 "Bow Wow." 2
               ]
 
+getPhotosByIds :: [PhotoId] -> [Photo]
+getPhotosByIds pids = filter (\photo -> photoId photo `elem` pids) photosTable
+
 instance Inflatable AppHandler [PhotoId] [Photo] where
-  inflator pids = return $ filter (\photo -> photoId photo `elem` pids) photosTable
+  inflator = return . getPhotosByIds
 
 -- | Person
 
@@ -105,9 +151,12 @@ personTable = [ Person 1 "Alice"
               , Person 2 "Fido"
               ]
 
+getPersonById :: PersonId -> Maybe Person
+getPersonById pid = L.find (\person -> personId person == pid) personTable
+
 instance Inflatable AppHandler PersonId Person where
   inflator pid =
-    case L.find (\person -> personId person == pid) personTable of
+    case getPersonById pid of
       Nothing -> throwError . LookupError $ "Could not find person with id: " <> show pid
       Just person -> return person
 
@@ -115,6 +164,9 @@ instance Inflatable AppHandler PersonId Person where
 
 newtype AlbumId = AlbumId Int
   deriving (Eq, Show, Num, ToJSON, FromJSON, FromHttpApiData)
+
+instance Arbitrary AlbumId where
+  arbitrary = elements $ map AlbumId [1..3]
 
 data Album =
   Album { albumId :: AlbumId
@@ -131,6 +183,9 @@ albumTable = [ Album 1 "Vacations" 1 [1,2]
              , Album 2 "In the City" 1 [3]
              , Album 3 "Howl" 2 [4]
              ]
+
+getAlbumById :: AlbumId -> Maybe Album
+getAlbumById aid = L.find (\album -> albumId album == aid) albumTable
 
 instance HasDependencies AppHandler Album '[Person, [Photo]] where
   type DependencyBase Album = '[PersonId, [PhotoId]]

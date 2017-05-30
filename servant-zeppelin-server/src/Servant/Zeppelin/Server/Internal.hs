@@ -1,6 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module Servant.Zeppelin.Server.Internal where
 
@@ -54,21 +53,20 @@ parseSideLoadedParam r =
 methodRouterSideLoad :: ( AllCTRender ctypes (SideLoaded a deps)
                         , HasDependencies m a deps
                         , bs ~ DependencyBase a
-                        , CanInflate m bs deps
-                        , ToHandler m
+                        , CanInflate m n bs deps
                         , Monad m
                         )
-                     => Proxy deps
-                     -> Proxy m
+                     => Proxy m
+                     -> Proxy deps
                      -> m :~> Handler
                      -> Method -> Proxy ctypes -> Status
                      -> Delayed env (Handler a)
                      -> Router env
-methodRouterSideLoad _ _ nat method proxy status action =
+methodRouterSideLoad pm pdeps nat method proxy status action =
   leafRouter $ \env request respond ->
     let accH = fromMaybe ct_wildcard $ lookup hAccept $ requestHeaders request
         shouldInflate = parseSideLoadedParam request
-        inflationAction = if shouldInflate then inflate else noInflate
+        inflationAction = if shouldInflate then inflate pm pdeps else noInflate
     in runAction (bindAction action nat inflationAction
                          `addMethodCheck` methodCheck method request
                          `addAcceptCheck ` acceptCheck proxy accH
@@ -84,15 +82,14 @@ instance ( ReflectMethod method, KnownNat status
          , AllCTRender ctypes (SideLoaded a deps)
          , HasDependencies m a deps
          , bs ~ DependencyBase a
-         , CanInflate m bs deps
-         , ToHandler m
-         , HasContextEntry context (m :~> Handler)
+         , CanInflate m n bs deps
          , Monad m
+         , HasContextEntry context (m :~> Handler)
          ) => HasServer (Verb method status ctypes a :> SideLoad deps) context where
 
   type ServerT (Verb method status ctypes a :> SideLoad deps) m = m a
 
-  route Proxy context = methodRouterSideLoad (Proxy @deps) (Proxy @m) phi method (Proxy @ctypes) status
+  route Proxy context = methodRouterSideLoad (Proxy @m) (Proxy @deps) phi method (Proxy @ctypes) status
     where method = reflectMethod (Proxy @method)
           status = toEnum . fromInteger $ natVal (Proxy @status)
           phi = getContextEntry context
