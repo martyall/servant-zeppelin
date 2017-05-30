@@ -2,14 +2,15 @@
 
 module Servant.Zeppelin.Server.Internal.ContentTypes where
 
-import Data.Aeson
-import Data.Functor.Identity
-import Data.Kind
-import Data.Proxy
-import Data.Singletons.TypeLits
-import Data.Text (Text, pack)
+import           Data.Aeson
+import           Data.Functor.Identity
+import           Data.Kind
+import           Data.Proxy
+import           Data.Singletons.TypeLits
+import           Data.Text                              (Text, pack)
 
-import Servant.Zeppelin.Server.Internal.Types
+import           Servant.Zeppelin.Server.Internal.Types
+import           Servant.Zeppelin.Types
 
 --------------------------------------------------------------------------------
 -- | JSON Instances

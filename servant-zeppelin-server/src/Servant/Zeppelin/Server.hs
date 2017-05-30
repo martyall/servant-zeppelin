@@ -7,8 +7,7 @@ module Servant.Zeppelin.Server
   , DependencyList(NilDeps)
   ) where
 
-import Servant.Zeppelin.Server.Internal ()
-import Servant.Zeppelin.Server.Internal.Zeppelin
-import Servant.Zeppelin.Server.Internal.Types
-import Servant.Zeppelin.Server.Internal.ContentTypes
-
+import           Servant.Zeppelin.Types
+import           Servant.Zeppelin.Server.Internal              ()
+import           Servant.Zeppelin.Server.Internal.ContentTypes
+import           Servant.Zeppelin.Server.Internal.Types

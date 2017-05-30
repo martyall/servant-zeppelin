@@ -1,46 +1,40 @@
 {-# OPTIONS_GHC -fno-warn-unused-top-binds #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeInType #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE PolyKinds                  #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TypeApplications           #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TypeInType                 #-}
+{-# LANGUAGE TypeOperators              #-}
+{-# LANGUAGE UndecidableInstances       #-}
 
 module Servant.Zeppelin.ZeppelinSpec (spec) where
-import           Network.HTTP.Types                  (Status, status200,
-                                                      status404)
-import qualified Network.HTTP.Client as HCli
 
-import Control.Lens ((^?), (^.))
-import Control.Monad.IO.Class
-import Control.Monad.Except
-import Data.Monoid
-import Data.Aeson
+import           Control.Lens             ((^.), (^?))
+import           Control.Monad.Except
+import           Data.Aeson
 import           Data.Aeson.Lens
+import qualified Data.List                as L
+import           Data.Monoid
+import           Data.String.Conversions
+import           GHC.Generics             (Generic)
+import qualified Network.HTTP.Client      as HCli
+import           Network.HTTP.Types       (Status, status200, status404)
+import           Network.Wai.Handler.Warp (testWithApplication)
+import           Network.Wreq             (defaults, getWith, responseBody,
+                                           responseStatus)
+import           Servant
+import           Test.Hspec
+import           Test.QuickCheck
 
-import Data.String.Conversions
-import           Network.Wai.Handler.Warp            (testWithApplication)
-import           Network.Wreq                        (defaults, getWith, responseBody, responseStatus)
-
-import qualified Data.List as L
-import GHC.Generics (Generic)
-import Servant
--- import Servant.Utils.Enter
-import Test.Hspec
-import Test.QuickCheck
-
-import Servant.Zeppelin
-import Servant.Zeppelin.Server
+import           Servant.Zeppelin
+import           Servant.Zeppelin.Server
 
 
 spec :: Spec
@@ -90,7 +84,7 @@ zeppelinSpec
 
 type API = "albums" :> Capture "albumId" AlbumId :> Get '[JSON] Album :> SideLoad
 
-data QueryError = LookupError String
+newtype QueryError = LookupError String
 
 newtype DB a = DB { runDB :: ExceptT QueryError IO a }
   deriving (Functor, Applicative, Monad, MonadIO, MonadError QueryError)
@@ -101,7 +95,7 @@ server = albumHandler
 albumHandler :: AlbumId -> Handler Album
 albumHandler aid =
   case L.find (\album -> albumId album == aid) albumTable of
-    Nothing -> throwError err404
+    Nothing    -> throwError err404
     Just album -> return album
 
 phi :: DB :~> Handler
@@ -109,7 +103,7 @@ phi = NT $ \ha -> do
   ea <- liftIO . runExceptT . runDB $ ha
   case ea of
     Left (LookupError msg) -> throwError err404 {errBody = cs msg}
-    Right a -> return a
+    Right a                -> return a
 
 app :: Application
 app = serveWithContext (Proxy @API) ctxt server
@@ -139,9 +133,9 @@ type instance NamedDependency [Photo] = "photos"
 type instance NamedDependency [PhotoId] = "photoIds"
 
 data Photo =
-  Photo { photoId :: PhotoId
+  Photo { photoId      :: PhotoId
         , photoCaption :: String
-        , artistId :: PersonId
+        , artistId     :: PersonId
         } deriving (Eq, Show, Generic)
 
 instance ToJSON Photo
@@ -169,7 +163,7 @@ newtype PersonId = PersonId Int
 type instance NamedDependency Person = "person"
 
 data Person =
-  Person { personId :: PersonId
+  Person { personId   :: PersonId
          , personName :: String
          } deriving (Eq, Show, Generic)
 
@@ -200,9 +194,9 @@ instance Arbitrary AlbumId where
   arbitrary = elements $ map AlbumId [1..3]
 
 data Album =
-  Album { albumId :: AlbumId
-        , albumName :: String
-        , albumOwner :: PersonId
+  Album { albumId     :: AlbumId
+        , albumName   :: String
+        , albumOwner  :: PersonId
         , albumPhotos :: [PhotoId]
         } deriving (Eq, Show, Generic)
 
@@ -220,4 +214,6 @@ getAlbumById :: AlbumId -> Maybe Album
 getAlbumById aid = L.find (\album -> albumId album == aid) albumTable
 
 instance HasDependencies DB Album '[PersonId, [PhotoId]] where
-  getDependencies (Album _ _ owner pIds) = (owner &: pIds &: NilDeps)
+  getDependencies (Album _ _ owner pIds) = owner &: pIds &: NilDeps
+
+{-# ANN module ("HLint: ignore Reduce duplication" :: String) #-}

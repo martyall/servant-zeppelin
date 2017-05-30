@@ -1,24 +1,10 @@
 module Servant.Zeppelin.Server.Internal.Zeppelin where
 
-import Data.Proxy
-import Data.Functor.Identity (Identity(..))
-import Servant.Zeppelin.Server.Internal.Types
-import Data.Singletons.Prelude
-
---------------------------------------------------------------------------------
--- | Dependency Lists
---------------------------------------------------------------------------------
-
-(&:) :: ( Monad m
-        , Inflatable m b
-        , Full m b ~ f
-        )
-     => b
-     -> DependencyList m bs fs
-     -> DependencyList m (b:bs) (f:fs)
-(&:) b rest = b :&: rest
-
-infixr 5 &:
+import           Data.Functor.Identity                  (Identity (..))
+import           Data.Proxy
+import           Data.Singletons.Prelude
+import           Servant.Zeppelin.Server.Internal.Types
+import           Servant.Zeppelin.Types
 
 ----------------------------------------------------------------------------------
 ---- | Side Loading

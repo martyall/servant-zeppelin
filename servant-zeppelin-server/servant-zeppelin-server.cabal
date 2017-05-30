@@ -25,19 +25,12 @@ library
 
   build-depends:       base >= 4.7 && < 5
                      , aeson
-                     , bytestring
-                     , constraints
-                     , case-insensitive
                      , http-types
-                     , natural-transformation
                      , singletons
-                     , semigroups
                      , servant >= 0.10
                      , servant-server >= 0.10
                      , servant-zeppelin
-                     , string-conversions
                      , text
-                     , type-list
                      , wai
   default-language:    Haskell2010
 

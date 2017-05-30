@@ -1,3 +1,3 @@
 module Servant.Zeppelin where
 
-data SideLoad (deps :: [*])
+data SideLoad

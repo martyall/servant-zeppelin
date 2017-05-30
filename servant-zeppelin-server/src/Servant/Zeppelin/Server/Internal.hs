@@ -3,21 +3,24 @@
 
 module Servant.Zeppelin.Server.Internal where
 
-import Data.Maybe
-import Data.Proxy
-import Data.Singletons.TypeLits
-import Data.Singletons.Prelude hiding ((:>))
-import Data.List (lookup)
-import Servant.Server.Internal
-import Servant.API
-import Servant.API.ContentTypes
-import Servant.Utils.Enter
-import Network.Wai (Request, queryString, requestHeaders)
-import Network.HTTP.Types
+import           Data.List                                 (lookup)
+import           Data.Maybe
+import           Data.Proxy
+import           Data.Singletons.Prelude                   hiding ((:>))
+import           Data.Singletons.TypeLits
+import           Network.HTTP.Types
+import           Network.Wai                               (Request,
+                                                            queryString,
+                                                            requestHeaders)
+import           Servant.API
+import           Servant.API.ContentTypes
+import           Servant.Server.Internal
+import           Servant.Utils.Enter
 
-import Servant.Zeppelin
-import Servant.Zeppelin.Server.Internal.Zeppelin
-import Servant.Zeppelin.Server.Internal.Types
+import           Servant.Zeppelin
+import           Servant.Zeppelin.Types
+import           Servant.Zeppelin.Server.Internal.Types
+import           Servant.Zeppelin.Server.Internal.Zeppelin
 
 --------------------------------------------------------------------------------
 -- | Router
@@ -31,8 +34,8 @@ bindAction :: Delayed env (Handler a)
 bindAction Delayed{..} phi f =
   Delayed
     { serverD = \c p a b r -> case serverD c p a b r of
-        Route m -> Route $ m >>= (($$) phi) . f
-        Fail e -> Fail e
+        Route m     -> Route $ m >>= ($$) phi . f
+        Fail e      -> Fail e
         FailFatal e -> FailFatal e
     , ..
     }
