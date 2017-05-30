@@ -69,31 +69,31 @@ zeppelinSpec
 
 type API = "albums" :> Capture "albumId" AlbumId :> Get '[JSON] Album :> SideLoad
 
-data AppError = LookupError String
+data QueryError = LookupError String
 
-newtype AppHandler a = AppHandler { runAppHandler :: ExceptT AppError IO a }
-  deriving (Functor, Applicative, Monad, MonadIO, MonadError AppError)
+newtype DB a = DB { runDB :: ExceptT QueryError IO a }
+  deriving (Functor, Applicative, Monad, MonadIO, MonadError QueryError)
 
-server :: ServerT API AppHandler
+server :: ServerT API Handler
 server = albumHandler
 
-albumHandler :: AlbumId -> AppHandler Album
+albumHandler :: AlbumId -> Handler Album
 albumHandler aid =
   case L.find (\album -> albumId album == aid) albumTable of
-    Nothing -> throwError . LookupError $ "Could not find album with id: " <> show aid
+    Nothing -> throwError err404
     Just album -> return album
 
-phi :: AppHandler :~> Handler
+phi :: DB :~> Handler
 phi = NT $ \ha -> do
-  ea <- liftIO . runExceptT . runAppHandler $ ha
+  ea <- liftIO . runExceptT . runDB $ ha
   case ea of
     Left (LookupError msg) -> throwError err404 {errBody = cs msg}
     Right a -> return a
 
 app :: Application
-app = serveWithContext (Proxy @API) ctxt (enter phi server)
+app = serveWithContext (Proxy @API) ctxt server
   where
-    ctxt :: Context '[AppHandler :~> Handler]
+    ctxt :: Context '[DB :~> Handler]
     ctxt = phi :. EmptyContext
 
 
@@ -130,8 +130,8 @@ photosTable = [ Photo 1 "At the Beach." 1
 getPhotosByIds :: [PhotoId] -> [Photo]
 getPhotosByIds pids = filter (\photo -> photoId photo `elem` pids) photosTable
 
-instance Inflatable AppHandler [PhotoId] where
-  type Full AppHandler [PhotoId] = [Photo]
+instance Inflatable DB [PhotoId] where
+  type Full DB [PhotoId] = [Photo]
   inflator = return . getPhotosByIds
 
 -- | Person
@@ -157,8 +157,8 @@ personTable = [ Person 1 "Alice"
 getPersonById :: PersonId -> Maybe Person
 getPersonById pid = L.find (\person -> personId person == pid) personTable
 
-instance Inflatable AppHandler PersonId where
-  type Full AppHandler PersonId = Person
+instance Inflatable DB PersonId where
+  type Full DB PersonId = Person
   inflator pid =
     case getPersonById pid of
       Nothing -> throwError . LookupError $ "Could not find person with id: " <> show pid
@@ -191,5 +191,5 @@ albumTable = [ Album 1 "Vacations" 1 [1,2]
 getAlbumById :: AlbumId -> Maybe Album
 getAlbumById aid = L.find (\album -> albumId album == aid) albumTable
 
-instance HasDependencies AppHandler Album '[PersonId, [PhotoId]] where
+instance HasDependencies DB Album '[PersonId, [PhotoId]] where
   getDependencies (Album _ _ owner pIds) = (owner &: pIds &: NilDeps)
