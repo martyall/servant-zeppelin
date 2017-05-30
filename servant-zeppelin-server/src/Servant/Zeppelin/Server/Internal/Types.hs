@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeFamilyDependencies #-}
+{-# LANGUAGE UndecidableSuperClasses #-}
 
 module Servant.Zeppelin.Server.Internal.Types where
 
@@ -7,7 +8,7 @@ import Data.Kind
 import Data.Proxy
 
 --import Data.Constraint
-import Data.Singletons (Apply, type (~>))
+import Data.Singletons.Prelude
 
 
 --------------------------------------------------------------------------------
@@ -15,7 +16,7 @@ import Data.Singletons (Apply, type (~>))
 --------------------------------------------------------------------------------
 
 data DependencyList :: (* -> *) -> [*] -> [*] -> * where
-  IgnoreDeps :: DependencyList m as bs
+  IgnoreDeps :: DependencyList m bs fs
   NilDeps :: DependencyList m '[] '[]
   (:&:) :: b -> DependencyList m bs fs -> DependencyList m (b:bs) (f:fs)
 
@@ -26,22 +27,23 @@ data SideLoaded a (deps :: [*]) = SideLoaded a (DependencyList Identity deps dep
 --------------------------------------------------------------------------------
 
 -- | Inflatable represents an entity which can be expanded inside of a context @m@.
-class Inflatable m base full | base full -> m, m base -> full, full m -> base where
-  inflator :: base -> m full
+class Inflatable m base where
+  type Full m base :: k
+  inflator :: base -> m (Full m base)
 
 -- | Anything can be expanded into itself in the trivial context
-instance Inflatable Identity base base where
+instance Inflatable Identity base where
+  type Full Identity base = base
   inflator = return
 
 -- | Indicate that a type has dependencies, and supply the uninflated types
 -- (order matters here).
-class HasDependencies m a fs | a fs -> m, m a -> fs where
-  type DependencyBase a :: [*]
-  getDependencies :: a -> DependencyList m (DependencyBase a) fs
+class AllSatisfy bs (Inflatable' m) => HasDependencies m a bs | a -> bs, bs -> m where
+  getDependencies :: a -> DependencyList m bs (Map (Full' m) bs)
 
---------------------------------------------------------------------------------
--- | Servant Handler
---------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
+---- | Servant Handler
+----------------------------------------------------------------------------------
 
 data Inflators :: (* -> *) -> [*] -> [*] -> * where
   NilInflators :: Inflators m '[] '[]
@@ -49,17 +51,21 @@ data Inflators :: (* -> *) -> [*] -> [*] -> * where
 
 data Nat = Z | S Nat
 
-class (n ~ Length fs) => CanInflate m n bs fs | bs fs -> m, m bs -> fs, m fs -> bs where
-  getInflators :: Proxy m -> Proxy fs -> Inflators m bs fs
+class (n ~ Length fs) => CanInflate m n bs fs | m bs -> fs where
+  getInflators :: Proxy m -> Proxy bs -> Inflators m bs fs
 
-instance {-# OVERLAPS #-} Inflatable m b f => CanInflate m ('S 'Z) '[b] '[f] where
+instance {-# OVERLAPS #-}
+         ( Inflatable m b
+         , Full m b ~ f
+         ) => CanInflate m ('S 'Z) '[b] '[f] where
   getInflators _ _ = inflator :^ NilInflators
 
 instance {-# OVERLAPPABLE #-}
-         ( Inflatable m b f
+         ( Inflatable m b
+         , Full m b ~ f
          , CanInflate m n bs fs
          ) => CanInflate m ('S n) (b : bs) (f : fs) where
-  getInflators pm _ = inflator :^ getInflators pm (Proxy @fs)
+  getInflators pm _ = inflator :^ getInflators pm (Proxy @bs)
 
 ----------------------------------------------------------------------------------
 ---- Type Families
@@ -69,14 +75,15 @@ type family AllSatisfy (subjects :: [k]) (test :: (k ~> Constraint)) :: Constrai
   AllSatisfy '[] test = ()
   AllSatisfy (subj : rest) test = (Apply test subj, AllSatisfy rest test)
 
---type family CanInflate (m :: * -> *) (bs :: [*]) (fs :: [*]) = (c :: Constraint) | bs -> m where
---  CanInflate m '[] '[] = ()
---  CanInflate m (b:bs) (f:fs) = (Inflatable m b f, CanInflate m bs fs)
+data Inflatable' :: m -> (base ~> Constraint) where
+  Inflatable' :: Inflatable' m base
 
-data Inflatable' :: m -> b -> (f ~> Constraint) where
-  Inflatable' :: Inflatable' m b f
+type instance Apply (Inflatable' m) base = Inflatable m base
 
-type instance Apply (Inflatable' m b) f = Inflatable m b f
+data Full' :: m -> (base ~> Type) where
+  Full' :: Full' m base
+
+type instance Apply (Full' m) base = Full m base
 
 type family Length (as :: [*]) :: Nat where
   Length '[] = 'Z

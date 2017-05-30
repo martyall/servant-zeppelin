@@ -6,6 +6,7 @@ module Servant.Zeppelin.Server.Internal where
 import Data.Maybe
 import Data.Proxy
 import Data.Singletons.TypeLits
+import Data.Singletons.Prelude hiding ((:>))
 import Data.List (lookup)
 import Servant.Server.Internal
 import Servant.API
@@ -50,14 +51,14 @@ parseSideLoadedParam r =
 
 -- | Inspect the query params for a sideloaded query flag, if true or merely present,
 -- inflate the data's dependencies, otherwise just return the data.
-methodRouterSideLoad :: ( AllCTRender ctypes (SideLoaded a deps)
-                        , HasDependencies m a deps
-                        , bs ~ DependencyBase a
-                        , CanInflate m n bs deps
+methodRouterSideLoad :: ( AllCTRender ctypes (SideLoaded a fs)
+                        , HasDependencies m a bs
+                        , fs ~ Map (Full' m) bs
+                        , CanInflate m n bs fs
                         , Monad m
                         )
                      => Proxy m
-                     -> Proxy deps
+                     -> Proxy bs
                      -> m :~> Handler
                      -> Method -> Proxy ctypes -> Status
                      -> Delayed env (Handler a)
@@ -79,17 +80,17 @@ methodRouterSideLoad pm pdeps nat method proxy status action =
 --------------------------------------------------------------------------------
 
 instance ( ReflectMethod method, KnownNat status
-         , AllCTRender ctypes (SideLoaded a deps)
-         , HasDependencies m a deps
-         , bs ~ DependencyBase a
-         , CanInflate m n bs deps
+         , CanInflate m n bs fs
+         , HasDependencies m a bs
+         , fs ~ Map (Full' m) bs
+         , AllCTRender ctypes (SideLoaded a fs)
          , Monad m
          , HasContextEntry context (m :~> Handler)
-         ) => HasServer (Verb method status ctypes a :> SideLoad deps) context where
+         ) => HasServer (Verb method status ctypes a :> SideLoad bs) context where
 
   type ServerT (Verb method status ctypes a :> SideLoad deps) m = m a
 
-  route Proxy context = methodRouterSideLoad (Proxy @m) (Proxy @deps) phi method (Proxy @ctypes) status
+  route Proxy context = methodRouterSideLoad (Proxy @m) (Proxy @bs) phi method (Proxy @ctypes) status
     where method = reflectMethod (Proxy @method)
           status = toEnum . fromInteger $ natVal (Proxy @status)
           phi = getContextEntry context

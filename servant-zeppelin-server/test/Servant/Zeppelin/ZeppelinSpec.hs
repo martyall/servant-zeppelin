@@ -59,13 +59,15 @@ zeppelinSpec
       resp ^? responseBody . key "data" . _JSON `shouldBe` getAlbumById aid
       resp ^? responseBody . key "dependencies" . key "person" . _JSON
         `shouldBe` (getPersonById . albumOwner =<< album)
+      resp ^? responseBody . key "dependencies" . key "photos" . _JSON
+        `shouldBe` (getPhotosByIds . albumPhotos <$> album)
 
 
 --------------------------------------------------------------------------------
 -- | Application
 --------------------------------------------------------------------------------
 
-type API = "albums" :> Capture "albumId" AlbumId :> Get '[JSON] Album :> SideLoad '[Person, [Photo]]
+type API = "albums" :> Capture "albumId" AlbumId :> Get '[JSON] Album :> SideLoad '[PersonId, [PhotoId]]
 
 data AppError = LookupError String
 
@@ -128,7 +130,8 @@ photosTable = [ Photo 1 "At the Beach." 1
 getPhotosByIds :: [PhotoId] -> [Photo]
 getPhotosByIds pids = filter (\photo -> photoId photo `elem` pids) photosTable
 
-instance Inflatable AppHandler [PhotoId] [Photo] where
+instance Inflatable AppHandler [PhotoId] where
+  type Full AppHandler [PhotoId] = [Photo]
   inflator = return . getPhotosByIds
 
 -- | Person
@@ -154,7 +157,8 @@ personTable = [ Person 1 "Alice"
 getPersonById :: PersonId -> Maybe Person
 getPersonById pid = L.find (\person -> personId person == pid) personTable
 
-instance Inflatable AppHandler PersonId Person where
+instance Inflatable AppHandler PersonId where
+  type Full AppHandler PersonId = Person
   inflator pid =
     case getPersonById pid of
       Nothing -> throwError . LookupError $ "Could not find person with id: " <> show pid
@@ -187,6 +191,5 @@ albumTable = [ Album 1 "Vacations" 1 [1,2]
 getAlbumById :: AlbumId -> Maybe Album
 getAlbumById aid = L.find (\album -> albumId album == aid) albumTable
 
-instance HasDependencies AppHandler Album '[Person, [Photo]] where
-  type DependencyBase Album = '[PersonId, [PhotoId]]
+instance HasDependencies AppHandler Album '[PersonId, [PhotoId]] where
   getDependencies (Album _ _ owner pIds) = (owner &: pIds &: NilDeps)
