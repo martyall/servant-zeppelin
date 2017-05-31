@@ -42,6 +42,8 @@ library
                      , MultiParamTypeClasses
                      , ScopedTypeVariables
                      , ConstraintKinds
+                     
+  ghc-options: -Wall
 
 test-suite servant-zeppelin-swagger-test
   type:                exitcode-stdio-1.0

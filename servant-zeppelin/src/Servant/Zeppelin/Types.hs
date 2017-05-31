@@ -43,16 +43,16 @@ instance Inflatable Identity base where
 -- Type Families
 --------------------------------------------------------------------------------
 
---type family AllSatisfy (subjects :: [k]) (test :: (k ~> Constraint)) :: Constraint where
---  AllSatisfy '[] test = ()
---  AllSatisfy (subj : rest) test = (Apply test subj, AllSatisfy rest test)
---
---data Inflatable' :: m -> (base ~> Constraint) where
---  Inflatable' :: Inflatable' m base
---
---type instance Apply (Inflatable' m) base = Inflatable m base
---
---data Full' :: m -> (base ~> Type) where
---  Full' :: Full' m base
---
---type instance Apply (Full' m) base = Full m base
+type family AllSatisfy (subjects :: [k]) (test :: (k ~> Constraint)) :: Constraint where
+  AllSatisfy '[] test = ()
+  AllSatisfy (subj : rest) test = (Apply test subj, AllSatisfy rest test)
+
+data Inflatable' :: m -> (base ~> Constraint) where
+  Inflatable' :: Inflatable' m base
+
+type instance Apply (Inflatable' m) base = Inflatable m base
+
+data Full' :: m -> (base ~> Type) where
+  Full' :: Full' m base
+
+type instance Apply (Full' m) base = Full m base

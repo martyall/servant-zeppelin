@@ -1,17 +1,16 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
 module Servant.Zeppelin.Swagger where
 
-import           Control.Lens               (mapped, (%~), (&), (.~), (?~),
-                                             (^.), (^?))
+import           Control.Lens               (mapped, (%~), (&), (.~), (?~))
 import           Control.Monad
-import           Data.Aeson                 (ToJSON (..), Value (Object),
-                                             object, (.=))
-import qualified Data.HashMap.Lazy          as U (HashMap, insert)
+import           Data.Aeson                 (ToJSON (..))
+
 import qualified Data.HashMap.Strict.InsOrd as O (empty, fromList, insert,
                                                   member)
 import           Data.Kind
 import           Data.Monoid                ((<>))
 import           Data.Promotion.Prelude     hiding ((:>))
-import           Data.Proxy
 import           Data.Singletons.TypeLits
 import           Data.Swagger
 import           Data.Swagger.Declare
@@ -53,7 +52,6 @@ instance ( ToSchema a
   declareNamedSchema _ = do
     aRef <- declareSchemaRef $ Proxy @a
     depsRef <- declareDependencySchemaRef $ Proxy @deps
-    depsNamedSchema <- declareDependencySchema (Proxy @deps)
     let aName = schemaName $ Proxy @a
     return $ NamedSchema (fmap ("side-loaded JSON: " <>) aName)
       ( mempty
@@ -67,12 +65,12 @@ declareDependencySchemaRef :: ToDependencySchema deps
                            -> Declare (Definitions Schema) (Referenced Schema)
 declareDependencySchemaRef deps =
   case undeclare . declareDependencySchema $ deps of
-    NamedSchema (Just name) schema -> do
-      known <- looks (O.member name)
+    NamedSchema (Just schmName) schm -> do
+      known <- looks (O.member schmName)
       unless known $ do
-        declare $ O.fromList [(name, schema)]
+        declare $ O.fromList [(schmName, schm)]
         void $ declareDependencySchema deps
-      return $ Ref (Reference name)
+      return $ Ref (Reference schmName)
     _ -> Inline . _namedSchemaSchema <$> declareDependencySchema deps
 
 instance {-# OVERLAPPABLE #-}
