@@ -18,14 +18,13 @@ library
   exposed-modules:     Servant.Zeppelin.Swagger
   build-depends:       base >= 4.7 && < 5
                      , aeson
-                     , lens
                      , insert-ordered-containers
-                     , unordered-containers
+                     , lens
                      , singletons
-                     , swagger2
                      , servant
                      , servant-swagger >= 1.1.2.1
                      , servant-zeppelin
+                     , swagger2
                      , text
   default-language:    Haskell2010
   default-extensions:  GADTs
@@ -51,9 +50,9 @@ test-suite servant-zeppelin-swagger-test
   main-is:             Spec.hs
   build-depends:       base
                      , aeson
+                     , containers
                      , hspec
                      , insert-ordered-containers
-                     , containers
                      , lens
                      , servant
                      , servant-swagger
@@ -62,6 +61,7 @@ test-suite servant-zeppelin-swagger-test
                      , swagger2
   ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
+  other-modules:       Servant.Zeppelin.SwaggerSpec
 
 source-repository head
   type:     git
