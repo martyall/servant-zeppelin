@@ -1,5 +1,5 @@
 module Servant.Zeppelin where
 
-import Data.Kind
+import           Data.Kind
 
 data SideLoad (fs :: [*])

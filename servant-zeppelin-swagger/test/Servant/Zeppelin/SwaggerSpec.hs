@@ -1,21 +1,54 @@
 {-# OPTIONS_GHC -fno-warn-unused-top-binds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TypeApplications           #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TypeInType                 #-}
+{-# LANGUAGE TypeOperators              #-}
 
 module Servant.Zeppelin.SwaggerSpec (spec) where
 
-import Control.Lens ((&), (?~), mapped)
-import  Data.Aeson
-import  GHC.Generics
-import           Test.Hspec hiding (example)
+import           Control.Lens               (at, mapped, (&), (?~), (^?), _Just)
+import           Data.Aeson
+import qualified Data.HashMap.Strict.InsOrd as O
+import           Data.Proxy
+import qualified Data.Set                   as S
+import           Data.Swagger
+import           GHC.Generics               (Generic)
+import           Servant.API
+import           Servant.Swagger
+import           Servant.Zeppelin
+import           Servant.Zeppelin.Swagger   ()
 import           Servant.Zeppelin.Types
-import Data.Swagger
+import           Test.Hspec                 hiding (example)
 
 spec :: Spec
 spec = do
+  swaggerSpec
   return ()
+
+
+swaggerSpec :: Spec
+swaggerSpec = describe "Has Swagger instance" $ do
+
+  let swag = toSwagger $ Proxy @API
+
+  it "has properties of the main type" $ do
+    let Just (Inline depSchema) =  swag ^? definitions . at "side-loaded JSON: Album"
+          . _Just . properties . at "dependencies" . _Just
+        Just props = depSchema ^? properties
+    (S.fromList . O.keys $ props) `shouldBe` S.fromList ["photos", "person"]
+
+
+--------------------------------------------------------------------------------
+-- | api
+--------------------------------------------------------------------------------
+
+type API = "album" :> Get '[JSON] Album :> SideLoad [Person, [Photo]]
 
 --------------------------------------------------------------------------------
 -- | Data
@@ -38,6 +71,8 @@ data Photo =
 
 instance ToJSON Photo
 instance FromJSON Photo
+
+type instance NamedDependency [Photo] = "photos"
 
 examplePhotos :: [Photo]
 examplePhotos = [ Photo 1 "At the Beach." 1
@@ -67,6 +102,8 @@ instance FromJSON Person
 
 examplePerson :: Person
 examplePerson = Person 1 "Alice"
+
+type instance NamedDependency Person = "person"
 
 instance ToSchema Person where
   declareNamedSchema p = genericDeclareNamedSchema defaultSchemaOptions p

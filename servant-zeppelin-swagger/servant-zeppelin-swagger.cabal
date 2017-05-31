@@ -50,7 +50,11 @@ test-suite servant-zeppelin-swagger-test
   build-depends:       base
                      , aeson
                      , hspec
+                     , insert-ordered-containers
+                     , containers
                      , lens
+                     , servant
+                     , servant-swagger
                      , servant-zeppelin
                      , servant-zeppelin-swagger
                      , swagger2

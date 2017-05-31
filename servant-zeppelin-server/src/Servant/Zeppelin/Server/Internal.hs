@@ -18,9 +18,9 @@ import           Servant.Server.Internal
 import           Servant.Utils.Enter
 
 import           Servant.Zeppelin
-import           Servant.Zeppelin.Types
 import           Servant.Zeppelin.Server.Internal.Types
 import           Servant.Zeppelin.Server.Internal.Zeppelin
+import           Servant.Zeppelin.Types
 
 --------------------------------------------------------------------------------
 -- | Router

@@ -16,7 +16,7 @@
 
 module Servant.Zeppelin.ZeppelinSpec (spec) where
 
-import           Control.Lens             ((^.), (^?), (.~), (&))
+import           Control.Lens             ((&), (.~), (^.), (^?))
 import           Control.Monad.Except
 import           Data.Aeson
 import           Data.Aeson.Lens
@@ -27,8 +27,8 @@ import           GHC.Generics             (Generic)
 import qualified Network.HTTP.Client      as HCli
 import           Network.HTTP.Types       (Status, status200, status404)
 import           Network.Wai.Handler.Warp (testWithApplication)
-import           Network.Wreq             (defaults, getWith, responseBody,
-                                           responseStatus, header, param)
+import           Network.Wreq             (defaults, getWith, header, param,
+                                           responseBody, responseStatus)
 import           Servant
 import           Test.Hspec
 import           Test.QuickCheck
