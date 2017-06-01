@@ -55,6 +55,7 @@ zeppelinSpec
           path = "/albums/" <> show aidInt
           options = defaults & param "sideload" .~ ["true"]
       resp <- getWith options $ url path port
+      print $ resp ^? responseBody
       resp ^? responseBody . key "data" . _JSON `shouldBe` album
       resp ^? responseBody . key "dependencies" . key "person" . _JSON
         `shouldBe` (getPersonById . albumOwner =<< album)
@@ -67,6 +68,7 @@ zeppelinSpec
           (AlbumId aidInt) = aid
           path = "/albums/" <> show aidInt
       resp <- getWith defaults $ url path port
+      print $ resp ^? responseBody
       resp ^? responseBody . _JSON `shouldBe` album
 
     it "will throw an appropriate error for a missing dependency when sideloading" $ \port -> do
