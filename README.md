@@ -33,7 +33,7 @@ getPhotosByIds = ...
 We can use these functions to implement our `Inflatable` typeclass, e.g.
 
 ```haskell
-instance Infltable PGMonad PersonId where
+instance Inflatable PGMonad PersonId where
   type Full PGMonad PersonId = Person
   inflator = getPersonById 
 ```
