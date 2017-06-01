@@ -18,7 +18,7 @@ module Servant.Zeppelin.ClientSpec (spec) where
 import           Control.Monad.Except
 import           Data.Aeson
 import           Data.Either
-import qualified Data.List                            as L
+import qualified Data.List                as L
 import           Data.String.Conversions
 import           GHC.Generics
 import           Servant.Server
@@ -27,13 +27,12 @@ import           Servant.Zeppelin.Client
 import           Servant.Zeppelin.Server
 import           Servant.Zeppelin.Types
 
-import           Network.Wai.Handler.Warp             (testWithApplication)
-import           System.IO.Unsafe                     (unsafePerformIO)
+import           Network.Wai.Handler.Warp (testWithApplication)
+import           System.IO.Unsafe         (unsafePerformIO)
 
 
-import           Network.HTTP.Client                  (Manager,
-                                                       defaultManagerSettings,
-                                                       newManager)
+import           Network.HTTP.Client      (Manager, defaultManagerSettings,
+                                           newManager)
 import           Servant
 import           Servant.Client
 import           Test.Hspec
