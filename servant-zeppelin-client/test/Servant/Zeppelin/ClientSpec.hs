@@ -17,12 +17,10 @@ module Servant.Zeppelin.ClientSpec (spec) where
 
 import           Control.Monad.Except
 import           Data.Aeson
-import           Data.Default.Class
 import           Data.Either
 import qualified Data.List                            as L
 import           Data.String.Conversions
 import           GHC.Generics
-import           Network.Wai.Middleware.RequestLogger
 import           Servant.Server
 import           Servant.Zeppelin
 import           Servant.Zeppelin.Client
@@ -48,20 +46,21 @@ spec = do
   return ()
 
 hasClientSpec :: Spec
-hasClientSpec = describe "HasClient" $ around (testWithApplication app) $ do
+hasClientSpec = describe "HasClient" $ around (testWithApplication $ return app) $ do
 
   it "succeeds when we ask for the inflated data" $ \port -> property
                                                   $ \aid -> do
     ealbum <- getAlbumClientFull mgr (BaseUrl Http "localhost" port "") aid
-    let Just (person, photos) = do
+    let Just (album, person, photos) = do
           a <- getAlbumById aid
           p <- getPersonById (albumOwner a)
           let phs = getPhotosByIds (albumPhotos a)
-          return (p, phs)
+          return (a, p, phs)
     ealbum `shouldSatisfy` isRight
     let Right (SideLoaded a deps) = ealbum
     person `shouldBe` projectDependency deps
     photos `shouldBe` projectDependency deps
+    a `shouldBe` album
 
   it "succeeds when we ask for the uninflated data" $ \port -> property
                                                     $ \aid -> do
@@ -129,13 +128,8 @@ phi = NT $ \ha -> do
     Left (LookupError msg) -> throwError err404 {errBody = cs msg}
     Right a                -> return a
 
-loggerOptions :: RequestLoggerSettings
-loggerOptions = def {outputFormat = Detailed True}
-
-app :: IO Application
-app = do
-  logger <- mkRequestLogger loggerOptions
-  return . logger $ serveWithContext api ctxt server
+app :: Application
+app = serveWithContext api ctxt server
   where
     ctxt :: Context '[DB :~> Handler]
     ctxt = phi :. EmptyContext

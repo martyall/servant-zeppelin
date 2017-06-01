@@ -18,6 +18,10 @@ import           Servant.Common.Req
 import           Servant.Zeppelin
 import           Servant.Zeppelin.Types
 
+--------------------------------------------------------------------------------
+-- | FromJSON Instances
+--------------------------------------------------------------------------------
+
 instance FromJSON (DependencyList Identity '[] '[]) where
   parseJSON (Object _) = return NilDeps
   -- this can't actually happen.
@@ -42,6 +46,10 @@ instance ( FromJSON (DependencyList Identity ds ds)
         return $ SideLoaded a ds
   parseJSON _ = fail "Could not parse dependencies."
 
+--------------------------------------------------------------------------------
+-- | HList Accessors
+--------------------------------------------------------------------------------
+
 class ProjectDependency bs b where
   projectDependency :: forall fs m . DependencyList m bs fs -> b
 
@@ -50,6 +58,10 @@ instance {-# OVERLAPPING #-} ProjectDependency (b : bs) b where
 
 instance {-# OVERLAPPABLE #-} ProjectDependency bs b =>  ProjectDependency (a : bs) b where
   projectDependency (_ :&: bs ) = projectDependency bs
+
+--------------------------------------------------------------------------------
+-- | Dependent Client
+--------------------------------------------------------------------------------
 
 data SBool :: Bool -> * where
   STrue :: SBool 'True
