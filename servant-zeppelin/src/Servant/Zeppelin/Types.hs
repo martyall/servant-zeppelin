@@ -1,5 +1,5 @@
+{-# LANGUAGE UndecidableInstances    #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 module Servant.Zeppelin.Types where
 
@@ -26,10 +26,21 @@ data DependencyList :: (* -> *) -> [*] -> [*] -> * where
 
 infixr 5 &:
 
+instance AllSatisfy bs Show' => Show (DependencyList m bs fs) where
+  show NilDeps    = "NilDeps"
+  show (b :&: bs) = show b ++ " :&: " ++ show bs
+
+instance AllSatisfy bs Eq' => Eq (DependencyList m bs fs) where
+  NilDeps == NilDeps = True
+  (b :&: bs) == (b' :&: bs') = b == b' && bs == bs'
+
 -- | Labels for the objects created in the dependency mapping. Useful for JSON instances.
 type family NamedDependency (a :: Type) :: Symbol
 
 data SideLoaded a (deps :: [*]) = SideLoaded a (DependencyList Identity deps deps)
+
+deriving instance (Show a, Show (DependencyList Identity deps deps)) => Show (SideLoaded a deps)
+deriving instance (Eq a, Eq (DependencyList Identity deps deps)) => Eq (SideLoaded a deps)
 
 -- | Inflatable represents an entity which can be expanded inside of a context @m@.
 class Inflatable m base where
@@ -67,3 +78,13 @@ data Full' :: m -> (base ~> Type) where
   Full' :: Full' m base
 
 type instance Apply (Full' m) base = Full m base
+
+data Eq' :: b ~> Constraint where
+  Eq' :: Eq' b
+
+type instance Apply Eq' b = Eq b
+
+data Show' :: b ~> Constraint where
+  Show' :: Show' b
+
+type instance Apply Show' b = Show b

@@ -1,46 +1,75 @@
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
+{-# LANGUAGE TypeApplications           #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TypeOperators              #-}
 
 {-# OPTIONS_GHC -fno-warn-unused-binds#-}
 
 module Servant.Zeppelin.ClientSpec (spec) where
 
-import Data.Aeson
-import Control.Monad.Except
-import GHC.Generics
-import Data.String.Conversions
-import qualified Data.List as L
-import Servant.Zeppelin.Client
-import Servant.Zeppelin.Server
-import Servant.Zeppelin
-import Servant.Zeppelin.Types
-import Servant.Server
-import           Network.Wai.Handler.Warp (testWithApplication)
-import           System.IO.Unsafe         (unsafePerformIO)
+import           Control.Monad.Except
+import           Data.Aeson
+import           Data.Default.Class
+import           Data.Either
+import qualified Data.List                            as L
+import           Data.String.Conversions
+import           GHC.Generics
+import           Network.Wai.Middleware.RequestLogger
+import           Servant.Server
+import           Servant.Zeppelin
+import           Servant.Zeppelin.Client
+import           Servant.Zeppelin.Server
+import           Servant.Zeppelin.Types
+
+import           Network.Wai.Handler.Warp             (testWithApplication)
+import           System.IO.Unsafe                     (unsafePerformIO)
 
 
-import Servant.Client
-import           Network.HTTP.Client      (Manager, defaultManagerSettings,
-                                           newManager)
-import Servant
-import Test.Hspec
+import           Network.HTTP.Client                  (Manager,
+                                                       defaultManagerSettings,
+                                                       newManager)
+import           Servant
+import           Servant.Client
+import           Test.Hspec
+import           Test.QuickCheck
 
 
 spec :: Spec
 spec = do
+  hasClientSpec
   return ()
 
+hasClientSpec :: Spec
+hasClientSpec = describe "HasClient" $ around (testWithApplication app) $ do
+
+  it "succeeds when we ask for the inflated data" $ \port -> property
+                                                  $ \aid -> do
+    ealbum <- getAlbumClientFull mgr (BaseUrl Http "localhost" port "") aid
+    let Just (person, photos) = do
+          a <- getAlbumById aid
+          p <- getPersonById (albumOwner a)
+          let phs = getPhotosByIds (albumPhotos a)
+          return (p, phs)
+    ealbum `shouldSatisfy` isRight
+    let Right (SideLoaded a deps) = ealbum
+    person `shouldBe` projectDependency deps
+    photos `shouldBe` projectDependency deps
+
+  it "succeeds when we ask for the uninflated data" $ \port -> property
+                                                    $ \aid -> do
+    ealbum <- getAlbumClient mgr (BaseUrl Http "localhost" port "") aid
+    ealbum `shouldSatisfy` isRight
+    let Right album = ealbum
+        Just album' = getAlbumById aid
+    album `shouldBe` album'
 
 --------------------------------------------------------------------------------
 -- | Client
@@ -58,7 +87,7 @@ getAlbumClientFull :: Manager
                    -> IO (Either ServantError (SideLoaded Album AlbumDeps))
 getAlbumClientFull m burl aid =
   flip runClientM (ClientEnv m burl) $
-    runDepClient (client api $ aid) STrue
+    runDepClient (client api aid) STrue
 
 getAlbumClient :: Manager
                -> BaseUrl
@@ -66,7 +95,7 @@ getAlbumClient :: Manager
                -> IO (Either ServantError Album)
 getAlbumClient m burl aid =
   flip runClientM (ClientEnv m burl) $
-    runDepClient (client api $ aid) SFalse
+    runDepClient (client api aid) SFalse
 
 --------------------------------------------------------------------------------
 -- | Application
@@ -100,8 +129,13 @@ phi = NT $ \ha -> do
     Left (LookupError msg) -> throwError err404 {errBody = cs msg}
     Right a                -> return a
 
-app :: Application
-app = serveWithContext api ctxt server
+loggerOptions :: RequestLoggerSettings
+loggerOptions = def {outputFormat = Detailed True}
+
+app :: IO Application
+app = do
+  logger <- mkRequestLogger loggerOptions
+  return . logger $ serveWithContext api ctxt server
   where
     ctxt :: Context '[DB :~> Handler]
     ctxt = phi :. EmptyContext
@@ -174,6 +208,9 @@ instance Inflatable DB PersonId where
 
 newtype AlbumId = AlbumId Int
   deriving (Eq, Show, Num, ToJSON, FromJSON, FromHttpApiData, ToHttpApiData)
+
+instance Arbitrary AlbumId where
+  arbitrary = elements $ map AlbumId [1..3]
 
 data Album =
   Album { albumId     :: AlbumId

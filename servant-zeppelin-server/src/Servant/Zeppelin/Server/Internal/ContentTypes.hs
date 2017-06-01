@@ -6,7 +6,7 @@ import           Data.Aeson
 import           Data.Functor.Identity
 import           Data.Proxy
 import           Data.Singletons.TypeLits
-import           Data.Text                              (Text, pack)
+import           Data.Text                (Text, pack)
 import           Servant.API.ContentTypes
 
 import           Servant.Zeppelin.Types

@@ -50,9 +50,11 @@ test-suite servant-zeppelin-cient-test
   main-is:             Spec.hs
   build-depends:       base
                      , aeson
+                     , data-default-class
                      , hspec
                      , http-client
                      , mtl
+                     , QuickCheck
                      , servant
                      , servant-server
                      , servant-client
@@ -61,6 +63,7 @@ test-suite servant-zeppelin-cient-test
                      , servant-zeppelin-client
                      , string-conversions
                      , warp
+                     , wai-extra
   ghc-options:         -Wall -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
   other-modules:       Servant.Zeppelin.ClientSpec
