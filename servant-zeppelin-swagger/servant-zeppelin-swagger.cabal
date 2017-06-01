@@ -1,13 +1,10 @@
 name:                servant-zeppelin-swagger
 version:             0.1.0.0
--- synopsis:
--- description:
-homepage:            https://github.com/githubuser/servant-side-loaded#readme
+homepage:            https://github.com/martyall/servant-zeppelin#readme
 license:             BSD3
 license-file:        LICENSE
-author:              Author name here
-maintainer:          example@example.com
-copyright:           2017 Author name here
+author:              Martin Allen, Ben Weitzman
+copyright:           2017 Martin Allen, Ben Weitzman
 category:            Web
 build-type:          Simple
 extra-source-files:  README.md
@@ -65,4 +62,4 @@ test-suite servant-zeppelin-swagger-test
 
 source-repository head
   type:     git
-  location: https://github.com/githubuser/servant-side-loaded
+  location: https://github.com/martyall/servant-zeppelin

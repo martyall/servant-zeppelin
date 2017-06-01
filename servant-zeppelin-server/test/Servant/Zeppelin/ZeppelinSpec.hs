@@ -85,12 +85,10 @@ contentTypeSpec
   $ around (testWithApplication . return $ app) $ do
 
 -- the use of defaults above already tests the wildcard case.
-    it "can handle application/json" $ \port -> property $
-                                       \(aid :: AlbumId) -> do
+    it "can handle application/json" $ \port -> do
 
-      let album = getAlbumById aid
-          (AlbumId aidInt) = aid
-          path = "/albums/" <> show aidInt
+      let album = getAlbumById 1
+          path = "/albums/1"
           options = defaults
             & header "Accept" .~ ["application/json"]
             & param "sideload" .~ ["true"]
