@@ -2,6 +2,11 @@
 
 Server Side Loading JSON
 
+1. [Overview](#overview)
+2. [Server](#servant-zeppelin-server)
+3. [Swagger](#servant-zeppelin-swagger)
+4. [Client](#servant-zeppelin-client)
+
 ## Overview
 The point of servant-zeppelin is to enable server side loading of JSON data without having to write boilerplate.
 Take the following `Album` datatype for example, which is expanded in greater detail in the tests:
