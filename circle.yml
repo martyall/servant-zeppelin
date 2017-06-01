@@ -1,0 +1,22 @@
+dependencies:
+  cache_directories:
+    - "~/.stack"
+    - ".stack-work"
+  pre:
+    - curl -L https://github.com/commercialhaskell/stack/releases/download/v1.0.4/stack-1.0.4-linux-x86_64.tar.gz | tar zx -C /tmp
+    - sudo mv /tmp/stack-1.0.4-linux-x86_64/stack /usr/bin
+  override:
+    - stack setup
+    - rm -fr $(stack path --dist-dir) $(stack path --local-install-root)
+    - stack install hlint packdeps cabal-install
+    - stack build --fast
+    - stack build --fast --pedantic --haddock --test --no-run-tests --no-haddock-deps
+
+test:
+  override:
+    - stack test
+    - git ls-files | grep '\.l\?hs$' | xargs stack exec -- hlint -X QuasiQuotes "$@"
+    - stack exec -- cabal update
+    - stack exec --no-ghc-package-path -- cabal install --only-d --dry-run --reorder-goals
+    - stack exec -- packdeps *.cabal || true
+    - stack exec -- cabal check

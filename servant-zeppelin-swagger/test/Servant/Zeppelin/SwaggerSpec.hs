@@ -125,7 +125,7 @@ instance ToJSON Album
 instance FromJSON Album
 
 exampleAlbum :: Album
-exampleAlbum = Album 1 "Vacations" 1 [1,2]
+exampleAlbum = Album 1 "Vacations" 1 [1]
 
 instance ToSchema Album where
   declareNamedSchema p = genericDeclareNamedSchema defaultSchemaOptions p
