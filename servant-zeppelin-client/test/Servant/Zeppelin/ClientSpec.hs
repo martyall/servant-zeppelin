@@ -48,7 +48,7 @@ spec = do
 hasClientSpec :: Spec
 hasClientSpec = describe "HasClient" $ around (testWithApplication $ return app) $ do
 
-  it "succeeds when we ask for the inflated data" $ \port -> property
+  it "succeeds when we ask for the inflated data" $ \port -> quickCheckWith qcArgs $ property
                                                   $ \aid -> do
     ealbum <- getAlbumClientFull mgr (BaseUrl Http "localhost" port "") aid
     let Just (album, person, photos) = do
@@ -62,13 +62,16 @@ hasClientSpec = describe "HasClient" $ around (testWithApplication $ return app)
     photos `shouldBe` projectDependency deps
     a `shouldBe` album
 
-  it "succeeds when we ask for the uninflated data" $ \port -> property
+  it "succeeds when we ask for the uninflated data" $ \port -> quickCheckWith qcArgs $ property
                                                     $ \aid -> do
     ealbum <- getAlbumClient mgr (BaseUrl Http "localhost" port "") aid
     ealbum `shouldSatisfy` isRight
     let Right album = ealbum
         Just album' = getAlbumById aid
     album `shouldBe` album'
+
+qcArgs :: Args
+qcArgs = stdArgs {maxSuccess = 20}
 
 --------------------------------------------------------------------------------
 -- | Client

@@ -48,7 +48,7 @@ zeppelinSpec
   = describe "Can sideload album data based on query flag"
   $ around (testWithApplication . return $ app) $ do
 
-    it "can side load inflated data in the presence of the query flag" $ \port -> property $
+    it "can side load inflated data in the presence of the query flag" $ \port -> quickCheckWith qcArgs $ property $
                                                                          \(aid :: AlbumId) -> do
       let album = getAlbumById aid
           (AlbumId aidInt) = aid
@@ -61,7 +61,7 @@ zeppelinSpec
       resp ^? responseBody . key "dependencies" . key "photos" . _JSON
         `shouldBe` (getPhotosByIds . albumPhotos <$> album)
 
-    it "can side load normal data in the absense of the query flag" $ \port -> property $
+    it "can side load normal data in the absense of the query flag" $ \port -> quickCheckWith qcArgs $ property $
                                                                       \(aid :: AlbumId) -> do
       let album = getAlbumById aid
           (AlbumId aidInt) = aid
@@ -108,6 +108,9 @@ contentTypeSpec
       respWithParam ^? responseBody `shouldBe` Just "Album"
       respWithoutParam <- getWith options $ url path port
       respWithoutParam ^? responseBody `shouldBe` Just "Album"
+
+qcArgs :: Args
+qcArgs = stdArgs {maxSuccess = 20}
 
 --------------------------------------------------------------------------------
 -- | Application
