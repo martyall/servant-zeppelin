@@ -74,10 +74,8 @@ instance FromJSON Photo
 
 type instance NamedDependency [Photo] = "photos"
 
-examplePhotos :: [Photo]
-examplePhotos = [ Photo 1 "At the Beach." 1
-                , Photo 2 "At the Mountain." 1
-                ]
+examplePhotos :: Photo
+examplePhotos = Photo 1 "At the Beach." 1
 
 instance ToSchema Photo where
   declareNamedSchema p = genericDeclareNamedSchema defaultSchemaOptions p
@@ -132,8 +130,3 @@ exampleAlbum = Album 1 "Vacations" 1 [1,2]
 instance ToSchema Album where
   declareNamedSchema p = genericDeclareNamedSchema defaultSchemaOptions p
     & mapped.schema.example ?~ toJSON exampleAlbum
-
-exampleSideLoaded :: SideLoaded Album '[Person, [Photo]]
-exampleSideLoaded =
-  let deps = examplePerson :&: (examplePhotos :&: NilDeps)
-  in SideLoaded exampleAlbum deps
