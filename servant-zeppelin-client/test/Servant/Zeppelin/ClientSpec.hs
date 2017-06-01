@@ -12,6 +12,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+{-# OPTIONS_GHC -fno-warn-unused-binds#-}
+
 module Servant.Zeppelin.ClientSpec (spec) where
 
 import Data.Aeson
@@ -24,6 +26,13 @@ import Servant.Zeppelin.Server
 import Servant.Zeppelin
 import Servant.Zeppelin.Types
 import Servant.Server
+import           Network.Wai.Handler.Warp (testWithApplication)
+import           System.IO.Unsafe         (unsafePerformIO)
+
+
+import Servant.Client
+import           Network.HTTP.Client      (Manager, defaultManagerSettings,
+                                           newManager)
 import Servant
 import Test.Hspec
 
@@ -32,6 +41,33 @@ spec :: Spec
 spec = do
   return ()
 
+
+--------------------------------------------------------------------------------
+-- | Client
+--------------------------------------------------------------------------------
+
+mgr :: Manager
+mgr = unsafePerformIO $ newManager defaultManagerSettings
+{-# NOINLINE mgr #-}
+
+type AlbumDeps =  '[Person, [Photo]]
+
+getAlbumClientFull :: Manager
+                   -> BaseUrl
+                   -> AlbumId
+                   -> IO (Either ServantError (SideLoaded Album AlbumDeps))
+getAlbumClientFull m burl aid =
+  flip runClientM (ClientEnv m burl) $
+    runDepClient (client api $ aid) STrue
+
+getAlbumClient :: Manager
+               -> BaseUrl
+               -> AlbumId
+               -> IO (Either ServantError Album)
+getAlbumClient m burl aid =
+  flip runClientM (ClientEnv m burl) $
+    runDepClient (client api $ aid) SFalse
+
 --------------------------------------------------------------------------------
 -- | Application
 --------------------------------------------------------------------------------
@@ -39,6 +75,9 @@ spec = do
 type API = "albums" :> Capture "albumId" AlbumId
                     :> Get '[JSON, PlainText] Album
                     :> SideLoad '[Person, [Photo]]
+
+api :: Proxy API
+api = Proxy @API
 
 newtype QueryError = LookupError String
 
@@ -62,7 +101,7 @@ phi = NT $ \ha -> do
     Right a                -> return a
 
 app :: Application
-app = serveWithContext (Proxy @API) ctxt server
+app = serveWithContext api ctxt server
   where
     ctxt :: Context '[DB :~> Handler]
     ctxt = phi :. EmptyContext
@@ -134,7 +173,7 @@ instance Inflatable DB PersonId where
 -- | Albums
 
 newtype AlbumId = AlbumId Int
-  deriving (Eq, Show, Num, ToJSON, FromJSON, FromHttpApiData)
+  deriving (Eq, Show, Num, ToJSON, FromJSON, FromHttpApiData, ToHttpApiData)
 
 data Album =
   Album { albumId     :: AlbumId

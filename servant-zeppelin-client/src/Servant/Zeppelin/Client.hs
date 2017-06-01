@@ -42,26 +42,26 @@ instance ( FromJSON (DependencyList Identity ds ds)
   parseJSON _ = fail "Could not parse dependencies."
 
 class ProjectDependency bs b where
-  projectDependency' :: forall fs m . DependencyList m bs fs -> b
+  projectDependency :: forall fs m . DependencyList m bs fs -> b
 
 instance {-# OVERLAPPING #-} ProjectDependency (b : bs) b where
-  projectDependency' (b :&: _) = b
+  projectDependency (b :&: _) = b
 
 instance {-# OVERLAPPABLE #-} ProjectDependency bs b =>  ProjectDependency (a : bs) b where
-  projectDependency' (_ :&: bs ) = projectDependency' bs
+  projectDependency (_ :&: bs ) = projectDependency bs
 
 data SBool :: Bool -> * where
   STrue :: SBool 'True
   SFalse :: SBool 'False
 
 newtype DepClient (ix :: Bool -> *) (f :: Bool ~> Type) =
-    DepClient (forall (b :: Bool) . ix b -> Client (Apply f b))
+    DepClient {runDepClient :: forall (b :: Bool) . ix b -> Client (Apply f b)}
 
 data SideLoadTerminal :: method -> status -> cts -> a -> deps -> (Bool ~> Type) where
   SideLoadTerminal :: SideLoadTerminal method status cts a deps b
 
 type instance Apply (SideLoadTerminal method status cts a deps) b =
-  If b (Verb method status cts a) (Verb method status cts (SideLoaded a deps))
+  If b (Verb method status cts (SideLoaded a deps)) (Verb method status cts a)
 
 instance {-# OVERLAPPABLE #-}
          ( MimeUnrender JSON a
