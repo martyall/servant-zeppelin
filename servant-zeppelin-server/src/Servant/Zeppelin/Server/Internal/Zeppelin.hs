@@ -23,7 +23,7 @@ sequenceDependencyList (b :&: bs) (i :^ is) = do
 -- | Run the inflators and wrap in the SideLoaded type.
 inflate :: ( HasDependencies m a bs
            , fs ~ Map (Full' m) bs
-           , CanInflate m n bs fs
+           , CanInflate m bs fs
            , Monad m
            )
         => Proxy m

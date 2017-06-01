@@ -57,7 +57,7 @@ checkSideLoadedParam r =
 methodRouterSideLoad :: ( AllCTRender ctypes (SideLoaded a fs)
                         , HasDependencies t a bs
                         , fs ~ Map (Full' t) bs
-                        , CanInflate t n bs fs
+                        , CanInflate t bs fs
                         , AllCTRender ctypes a
                         , Monad t
                         )
@@ -89,7 +89,7 @@ methodRouterSideLoad pm pdeps nat method proxy status action =
 --------------------------------------------------------------------------------
 
 instance ( ReflectMethod method, KnownNat status
-         , CanInflate t n bs fs
+         , CanInflate t bs fs
          , HasDependencies t a bs
          , fs ~ Map (Full' t) bs
          , AllCTRender ctypes (SideLoaded a fs)
