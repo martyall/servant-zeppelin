@@ -1,21 +1,9 @@
-{-# LANGUAGE UndecidableSuperClasses #-}
-
 module Servant.Zeppelin.Server.Internal.Types where
 
 import           Data.Kind
 import           Data.Proxy
-import           Data.Singletons.Prelude
 
 import           Servant.Zeppelin.Types
-
---------------------------------------------------------------------------------
--- | HasDepedencies
---------------------------------------------------------------------------------
-
--- | Indicate that a type has dependencies, and supply the uninflated types
--- (order matters here).
-class AllSatisfy bs (Inflatable' m) => HasDependencies m a bs | a -> bs, bs -> m where
-  getDependencies :: a -> DependencyList m bs (Map (Full' m) bs)
 
 --------------------------------------------------------------------------------
 -- | Inflators

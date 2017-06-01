@@ -9,7 +9,6 @@ import           Data.Singletons.TypeLits
 import           Data.Text                              (Text, pack)
 import           Servant.API.ContentTypes
 
-import           Servant.Zeppelin.Server.Internal.Types
 import           Servant.Zeppelin.Types
 
 --------------------------------------------------------------------------------
@@ -26,9 +25,7 @@ instance ToKeyValueList (DependencyList Identity '[] '[]) where
 instance ( ToJSON d
          , KnownSymbol (NamedDependency d)
          , ToKeyValueList (DependencyList Identity ds ds)
-         , n ~ 'S (Length ds)
          ) => ToKeyValueList (DependencyList Identity (d:ds) (d:ds)) where
-  toKeyValueList IgnoreDeps = []
   toKeyValueList (a :&: rest) =
     let k = pack . symbolVal $ Proxy @(NamedDependency d)
         v = toJSON a
@@ -42,11 +39,9 @@ instance {-# OVERLAPPABLE #-}
          , ToJSON a
          ) => ToJSON (SideLoaded a deps) where
   toJSON (SideLoaded _data deps) =
-    case deps of
-      IgnoreDeps -> toJSON _data
-      deps' -> object [ "data" .= toJSON _data
-                      , "dependencies" .= toJSON deps'
-                      ]
+    object [ "data" .= toJSON _data
+           , "dependencies" .= toJSON deps
+           ]
 
 instance {-# OVERLAPPABLE #-} MimeRender ctype a => MimeRender ctype (SideLoaded a deps) where
   mimeRender c (SideLoaded a _) = mimeRender c a

@@ -58,6 +58,7 @@ methodRouterSideLoad :: ( AllCTRender ctypes (SideLoaded a fs)
                         , HasDependencies t a bs
                         , fs ~ Map (Full' t) bs
                         , CanInflate t n bs fs
+                        , AllCTRender ctypes a
                         , Monad t
                         )
                      => Proxy t
@@ -70,13 +71,18 @@ methodRouterSideLoad pm pdeps nat method proxy status action =
   leafRouter $ \env request respond ->
     let accH = fromMaybe ct_wildcard $ lookup hAccept $ requestHeaders request
         shouldInflate = checkSideLoadedParam request && acceptsJSON accH
-        inflationAction = if shouldInflate then inflate pm pdeps else noInflate
-    in runAction (bindAction action nat inflationAction
-                         `addMethodCheck` methodCheck method request
-                         `addAcceptCheck ` acceptCheck proxy accH
-                 ) env request respond $ \ output -> do
-         let handleA = handleAcceptH proxy (AcceptHeader accH) output
-         processMethodRouter handleA status method Nothing request
+    in if shouldInflate
+         then runAction (bindAction action nat (inflate pm pdeps)
+                          `addMethodCheck` methodCheck method request
+                          `addAcceptCheck ` acceptCheck proxy accH
+                        ) env request respond $ \ output -> do
+           let handleA = handleAcceptH proxy (AcceptHeader accH) output
+           processMethodRouter handleA status method Nothing request
+         else runAction (action `addMethodCheck` methodCheck method request
+                          `addAcceptCheck ` acceptCheck proxy accH
+                        ) env request respond $ \ output -> do
+           let handleA = handleAcceptH proxy (AcceptHeader accH) output
+           processMethodRouter handleA status method Nothing request
   where
     acceptsJSON ah = ah == ct_wildcard || ah == "application/json"
 
@@ -89,6 +95,7 @@ instance ( ReflectMethod method, KnownNat status
          , HasDependencies t a bs
          , fs ~ Map (Full' t) bs
          , AllCTRender ctypes (SideLoaded a fs)
+         , AllCTRender ctypes a
          , Monad t
          , HasContextEntry context (t :~> Handler)
          ) => HasServer (Verb method status ctypes a :> SideLoad fs) context where

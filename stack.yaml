@@ -4,8 +4,10 @@ packages:
 - './servant-zeppelin'
 - './servant-zeppelin-server'
 - './servant-zeppelin-swagger'
+- './servant-zeppelin-client'
 
 extra-deps:
  - servant-0.10
  - servant-server-0.10
+ - servant-client-0.10
  - servant-swagger-1.1.2.1

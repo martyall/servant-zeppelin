@@ -30,6 +30,7 @@ library
                      , TypeInType
                      , MultiParamTypeClasses
                      , ConstraintKinds
+                     , FunctionalDependencies
 
 source-repository head
   type:     git

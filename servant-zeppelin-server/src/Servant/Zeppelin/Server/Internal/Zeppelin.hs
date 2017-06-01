@@ -14,7 +14,6 @@ sequenceDependencyList :: Monad m
                        => DependencyList m bs fs
                        -> Inflators m bs fs
                        -> m (DependencyList Identity fs fs)
-sequenceDependencyList IgnoreDeps _ = return IgnoreDeps
 sequenceDependencyList NilDeps NilInflators = return NilDeps
 sequenceDependencyList (b :&: bs) (i :^ is) = do
   f <- i b
@@ -35,7 +34,3 @@ inflate pm pbs value =
   let dependencies = getDependencies value
       inflators = getInflators pm pbs
   in sequenceDependencyList dependencies inflators >>= \deps -> return $ SideLoaded value deps
-
--- | Ignore the inflation step.
-noInflate :: forall m bs a . Monad m => a -> m (SideLoaded a bs)
-noInflate a = return $ SideLoaded a IgnoreDeps

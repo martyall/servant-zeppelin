@@ -1,3 +1,6 @@
+{-# LANGUAGE UndecidableSuperClasses #-}
+{-# LANGUAGE UndecidableInstances #-}
+
 module Servant.Zeppelin.Types where
 
 import           Data.Functor.Identity   (Identity)
@@ -9,7 +12,6 @@ import           Data.Singletons.Prelude
 --------------------------------------------------------------------------------
 
 data DependencyList :: (* -> *) -> [*] -> [*] -> * where
-  IgnoreDeps :: DependencyList m bs fs
   NilDeps :: DependencyList m '[] '[]
   (:&:) :: b -> DependencyList m bs fs -> DependencyList m (b:bs) (f:fs)
 
@@ -38,6 +40,15 @@ class Inflatable m base where
 instance Inflatable Identity base where
   type Full Identity base = base
   inflator = return
+
+--------------------------------------------------------------------------------
+-- | HasDepedencies
+--------------------------------------------------------------------------------
+
+-- | Indicate that a type has dependencies, and supply the uninflated types
+-- (order matters here).
+class AllSatisfy bs (Inflatable' m) => HasDependencies m a bs | a -> bs, bs -> m where
+  getDependencies :: a -> DependencyList m bs (Map (Full' m) bs)
 
 --------------------------------------------------------------------------------
 -- Type Families
