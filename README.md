@@ -33,7 +33,7 @@ getPhotosByIds = ...
 We can use these functions to implement our `Inflatable` typeclass, e.g.
 
 ```haskell
-instance Infltable PGMonad PersonId where
+instance Inflatable PGMonad PersonId where
   type Full PGMonad PersonId = Person
   inflator = getPersonById 
 ```
@@ -120,13 +120,13 @@ in order to derive the instance `ToJSON (SideLoaded Album '[Person, [Photo]])`, 
 The second component which was needed is a way to transfer the context of the inflation to servant's `Handler` monad. Concretely, if our `PGMonad` above was newtyped around something like `ReaderT Connection (ExceptT QueryError IO)`, we need to provide a natural transformation of type `PGMonad :~> Handler` to the `Context` when we define our application. In principle it might happen that you use different contexts for different datatypes, for example if you were maintaining two seprate databases. This is ok as long as you provide both transformations to the `Context`. You can see the tests for more details.
 
 ## servant-zeppelin-swagger
-In order to have the swagger docs generate for an endpoing using the `:> SideLoad deps` combinator, we need to have a `ToSchema` instance for `SideLoad a deps`. The will be automatically derived for you with sensible choices proveded that you have a `ToSchema` instance for both `a` and every `d` in `deps`. With swagger, a picture is worth more than code, but you can see the tests for how to generate this:
+In order to have the swagger docs generate for an endpoing using the `... a :> SideLoad deps` combinator, we need to have a `ToSchema` instance for `SideLoaded a deps`. The will be automatically derived for you with sensible choices proveded that you have a `ToSchema` instance for both `a` and every `d` in `deps`. With swagger, a picture is worth more than code, but you can see the tests for how to generate this:
 
 ![Route](https://github.com/martyall/servant-zeppelin/blob/master/images/Route.png?raw=true)
 ![Model](https://github.com/martyall/servant-zeppelin/blob/master/images/Model.png?raw=true)
 
 ## servant-zeppelin-client
-We also provide a `HasClient` instance for the `SideLoad deps` combinator, though it behaves a little bit differenty than most `HasClient` instances you might have encountered so far. The problem is that a real `HasClient` instance is dependently typed-- if you give me `sideload=true` param, I exepect the sideloaded data of type `SideLoad a deps`, and if it's not there I expect something of type `a`. In order to get around the type systems limitations, the `HasClient` instance provides us with a dependently typed function which takes a singleton boolean value to produce the desired type. 
+We also provide a `HasClient` instance for the `SideLoad deps` combinator, though it behaves a little bit differenty than most `HasClient` instances you might have encountered so far. The problem is that a real `HasClient` instance is dependently typed-- if you give me `sideload=true` param, I exepect the sideloaded data of type `SideLoaded a deps`, and if it's not there I expect something of type `a`. In order to get around the type systems limitations, the `HasClient` instance provides us with a dependently typed function which takes a singleton boolean to get the desired type. 
 
 Also, the client has a bias for using requesting JSON-- this seems fair to me because there is yet no reason to use a `SideLoad` combinator on a route without JSON as a valid mime type. The necessary `FromJSON` instances are supplied in the client lib as well, and as usual they can be automatically derived so long as the components all have instances.
 
