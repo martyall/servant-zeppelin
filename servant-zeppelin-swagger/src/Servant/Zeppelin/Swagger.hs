@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module Servant.Zeppelin.Swagger where
+module Servant.Zeppelin.Swagger () where
 
 import           Control.Lens               (mapped, (%~), (&), (.~), (?~))
 import           Control.Monad
@@ -23,10 +23,11 @@ import           Servant.Zeppelin.Types
 
 --------------------------------------------------------------------------------
 
+-- | Helper type class for collecting the 'NamedSchema's of the dependencies.
 class ToDependencySchema (deps :: [*]) where
   declareDependencySchema :: proxy deps -> Declare (Definitions Schema) NamedSchema
 
--- | base case.
+-- | Base case for induction.
 instance ToDependencySchema '[] where
   declareDependencySchema _ =
     return $ NamedSchema Nothing
@@ -35,7 +36,7 @@ instance ToDependencySchema '[] where
         & properties .~ O.empty
       )
 
--- | inductive step
+-- | Inductive step.
 instance ( ToDependencySchema deps
          , KnownSymbol (NamedDependency d)
          , ToSchema d

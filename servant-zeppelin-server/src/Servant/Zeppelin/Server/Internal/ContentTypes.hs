@@ -12,10 +12,10 @@ import           Servant.API.ContentTypes
 import           Servant.Zeppelin.Types
 
 --------------------------------------------------------------------------------
--- | JSON Instances
+-- JSON Instances
 --------------------------------------------------------------------------------
 
--- | A helper class for the JSON instances
+-- | A helper class for the JSON instances.
 class ToKeyValueList a where
   toKeyValueList :: a -> [(Text, Value)]
 

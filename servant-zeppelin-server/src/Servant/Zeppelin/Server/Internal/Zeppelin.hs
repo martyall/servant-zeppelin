@@ -7,9 +7,10 @@ import           Servant.Zeppelin.Server.Internal.Types
 import           Servant.Zeppelin.Types
 
 ----------------------------------------------------------------------------------
----- | Side Loading
+-- Side Loading
 ----------------------------------------------------------------------------------
 
+-- | Monadically sequence the inflations.
 sequenceDependencyList :: Monad m
                        => DependencyList m bs fs
                        -> Inflators m bs fs

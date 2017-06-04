@@ -19,6 +19,7 @@ import           Control.Monad.Except
 import           Data.Aeson
 import           Data.Either
 import qualified Data.List                as L
+import           Data.Singletons.Prelude hiding ((:>))
 import           Data.String.Conversions
 import           GHC.Generics
 import           Servant.Server
@@ -228,7 +229,7 @@ getAlbumById :: AlbumId -> Maybe Album
 getAlbumById aid = L.find (\album -> albumId album == aid) albumTable
 
 instance HasDependencies DB Album '[PersonId, [PhotoId]] where
-  getDependencies (Album _ _ owner pIds) = owner &: pIds &: NilDeps
+  getDependencies (Album _ _ owner pIds) = owner :&: pIds :&: NilDeps
 
 instance MimeRender PlainText Album where
   mimeRender _ _ = "Album"

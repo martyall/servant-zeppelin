@@ -11,3 +11,4 @@ extra-deps:
  - servant-server-0.10
  - servant-client-0.10
  - servant-swagger-1.1.2.1
+ - haddock-api-2.17.4

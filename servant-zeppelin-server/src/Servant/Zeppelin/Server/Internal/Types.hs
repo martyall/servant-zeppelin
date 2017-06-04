@@ -6,14 +6,17 @@ import           Data.Proxy
 import           Servant.Zeppelin.Types
 
 --------------------------------------------------------------------------------
--- | Inflators
+-- Inflators
 --------------------------------------------------------------------------------
 
+-- | 'Inflators' @m as bs@ represents a heterogeneous list of Kliesli arrows that
+-- come from instances for 'Inflatable' @m a@ for all @a@ in @as@.
 data Inflators :: (* -> *) -> [*] -> [*] -> * where
   NilInflators :: Inflators m '[] '[]
   (:^) :: (a -> m b) -> Inflators m as bs -> Inflators m (a : as) (b : bs)
 
-
+-- | Because of the functional dependency on 'Inflatable' @m a@, it is sufficient
+-- to supply only the proxy types to get the inflators.
 class CanInflate m bs fs | m bs -> fs where
   getInflators :: Proxy m -> Proxy bs -> Inflators m bs fs
 

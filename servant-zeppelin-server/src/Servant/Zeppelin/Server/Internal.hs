@@ -23,7 +23,7 @@ import           Servant.Zeppelin.Server.Internal.Zeppelin
 import           Servant.Zeppelin.Types
 
 --------------------------------------------------------------------------------
--- | Router
+-- Router
 --------------------------------------------------------------------------------
 
 -- | Bind an action after the handler has run
@@ -85,7 +85,7 @@ methodRouterSideLoad pm pdeps nat method proxy status action =
            processMethodRouter handleA status method Nothing request
 
 --------------------------------------------------------------------------------
--- | HasServer instance
+-- HasServer instance
 --------------------------------------------------------------------------------
 
 instance ( ReflectMethod method, KnownNat status

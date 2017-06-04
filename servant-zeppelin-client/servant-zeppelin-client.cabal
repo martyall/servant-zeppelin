@@ -56,6 +56,7 @@ test-suite servant-zeppelin-cient-test
                      , servant-zeppelin
                      , servant-zeppelin-server
                      , servant-zeppelin-client
+                     , singletons
                      , string-conversions
                      , warp
                      , wai-extra
