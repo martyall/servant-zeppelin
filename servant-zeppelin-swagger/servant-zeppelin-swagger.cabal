@@ -4,6 +4,8 @@ homepage:            https://github.com/martyall/servant-zeppelin#readme
 license:             BSD3
 license-file:        LICENSE
 author:              Martin Allen, Ben Weitzman
+maintainer:          martin[dot]allen26[at]gmail.com
+synopsis:            Swagger instances for servant-zeppelin combinators.
 copyright:           2017 Martin Allen, Ben Weitzman
 category:            Web
 build-type:          Simple

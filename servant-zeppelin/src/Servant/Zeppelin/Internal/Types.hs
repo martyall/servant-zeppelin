@@ -1,13 +1,14 @@
 {-# LANGUAGE UndecidableInstances    #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
+{-# OPTIONS_GHC -fno-warn-unused-binds #-}
 
 module Servant.Zeppelin.Internal.Types
   ( DependencyList(..)
-  , NamedDependency(..)
+  , NamedDependency
   , SideLoaded(..)
   , Inflatable(..)
   , HasDependencies(..)
-  , AllSatisfy(..)
+  , AllSatisfy
   , Inflatable'
   , Full'
   ) where
