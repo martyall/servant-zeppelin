@@ -9,7 +9,7 @@ import           Data.Singletons.TypeLits
 import           Data.Text                (Text, pack)
 import           Servant.API.ContentTypes
 
-import           Servant.Zeppelin.Types
+import           Servant.Zeppelin.Internal.Types
 
 --------------------------------------------------------------------------------
 -- JSON Instances

@@ -1,7 +1,7 @@
 {-# LANGUAGE UndecidableInstances    #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 
-module Servant.Zeppelin.Types
+module Servant.Zeppelin.Internal.Types
   ( DependencyList(..)
   , NamedDependency(..)
   , SideLoaded(..)

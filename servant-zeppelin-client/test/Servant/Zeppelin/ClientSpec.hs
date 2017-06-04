@@ -26,7 +26,6 @@ import           Servant.Server
 import           Servant.Zeppelin
 import           Servant.Zeppelin.Client
 import           Servant.Zeppelin.Server
-import           Servant.Zeppelin.Types
 
 import           Network.Wai.Handler.Warp (testWithApplication)
 import           System.IO.Unsafe         (unsafePerformIO)

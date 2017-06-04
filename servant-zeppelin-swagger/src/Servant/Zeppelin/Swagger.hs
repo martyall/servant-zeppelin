@@ -1,6 +1,11 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module Servant.Zeppelin.Swagger () where
+module Servant.Zeppelin.Swagger
+  (
+  -- | The purpose of this package is provide the instance for 'servant-zepplin'
+  -- combinators needed for 'servant-swagger' documentation generation.
+    SideLoad
+  ) where
 
 import           Control.Lens               (mapped, (%~), (&), (.~), (?~))
 import           Control.Monad
@@ -19,7 +24,7 @@ import           Servant.API
 import           Servant.Swagger.Internal
 
 import           Servant.Zeppelin
-import           Servant.Zeppelin.Types
+import           Servant.Zeppelin.Internal.Types
 
 --------------------------------------------------------------------------------
 

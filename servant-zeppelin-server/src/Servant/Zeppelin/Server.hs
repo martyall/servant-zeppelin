@@ -14,5 +14,5 @@ module Servant.Zeppelin.Server
 
 import           Servant.Zeppelin.Server.Internal              ()
 import           Servant.Zeppelin.Server.Internal.ContentTypes ()
-import           Servant.Zeppelin.Types
+import           Servant.Zeppelin.Internal.Types
 import           Servant.Zeppelin

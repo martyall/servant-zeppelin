@@ -4,7 +4,7 @@ import           Data.Functor.Identity                  (Identity (..))
 import           Data.Proxy
 import           Data.Singletons.Prelude
 import           Servant.Zeppelin.Server.Internal.Types
-import           Servant.Zeppelin.Types
+import           Servant.Zeppelin.Internal.Types
 
 ----------------------------------------------------------------------------------
 -- Side Loading

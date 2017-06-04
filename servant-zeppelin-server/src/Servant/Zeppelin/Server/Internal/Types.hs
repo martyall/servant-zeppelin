@@ -3,7 +3,7 @@ module Servant.Zeppelin.Server.Internal.Types where
 import           Data.Kind
 import           Data.Proxy
 
-import           Servant.Zeppelin.Types
+import           Servant.Zeppelin.Internal.Types
 
 --------------------------------------------------------------------------------
 -- Inflators

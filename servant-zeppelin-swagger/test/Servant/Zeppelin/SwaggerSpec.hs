@@ -23,7 +23,7 @@ import           Servant.API
 import           Servant.Swagger
 import           Servant.Zeppelin
 import           Servant.Zeppelin.Swagger   ()
-import           Servant.Zeppelin.Types
+import           Servant.Zeppelin.Internal.Types
 import           Test.Hspec                 hiding (example)
 
 spec :: Spec

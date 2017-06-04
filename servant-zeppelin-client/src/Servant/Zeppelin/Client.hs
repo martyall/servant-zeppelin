@@ -4,11 +4,12 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Servant.Zeppelin.Client
-  ( ProjectDependency(..)
+  ( projectDependency
   , DepClient(..)
-  -- Re-Exported from Data.Singletons
+  -- * Re-exports
+  , SideLoaded(..)
+  , SideLoad
   , SBool
-  , Apply
   ) where
 
 import           Data.Aeson
@@ -23,10 +24,10 @@ import           Servant.Client
 import           Servant.Common.Req
 
 import           Servant.Zeppelin
-import           Servant.Zeppelin.Types
+import           Servant.Zeppelin.Internal.Types
 
 --------------------------------------------------------------------------------
--- | FromJSON Instances
+-- FromJSON Instances
 --------------------------------------------------------------------------------
 
 instance FromJSON (DependencyList Identity '[] '[]) where
@@ -57,12 +58,12 @@ instance ( FromJSON (DependencyList Identity ds ds)
 -- HList Accessors
 --------------------------------------------------------------------------------
 
--- | Project dependency in an accessor type class for HLists. If 'b' in 'bs', type
--- inference is used to project to 'b'.
+-- | 'ProjectDependency' @bs b' allows you to project to a dependency type from
+-- a 'DependencyList'. If 'b' in 'bs', type inference is used to project to 'b'.
+-- For example:
 --
--- > let (SideLoaded a deps) = s
+-- > let (SideLoaded a deps) = s :: SideLoaded Album '[Person, [Photo]]
 -- > personId . projectDependency $ deps :: PersonId
-
 class ProjectDependency bs b where
   projectDependency :: forall fs m . DependencyList m bs fs -> b
 
@@ -77,8 +78,8 @@ instance {-# OVERLAPPABLE #-} ProjectDependency bs b =>  ProjectDependency (a : 
 --------------------------------------------------------------------------------
 
 -- | 'DependentClient' is a wrapper around a dependently typed function that when
--- given a singleton 'STrue' returns 'SideLoaded' @a deps@ and when given 'SFalse'
--- returns @a@.
+-- given a singleton 'STrue' has return type 'SideLoaded' @a deps@, and
+-- when given 'SFalse' has return type @a@. For example:
 --
 -- > data Person =
 -- >   Person { personId   :: PersonId
