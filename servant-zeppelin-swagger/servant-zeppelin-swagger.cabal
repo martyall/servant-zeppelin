@@ -1,5 +1,5 @@
 name:                servant-zeppelin-swagger
-version:             0.1.0.0
+version:             0.1.0.1
 homepage:            https://github.com/martyall/servant-zeppelin#readme
 license:             BSD3
 license-file:        LICENSE
