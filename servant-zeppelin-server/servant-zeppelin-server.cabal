@@ -1,10 +1,10 @@
 name:                servant-zeppelin-server
-version:             0.1.0.3
+version:             0.1.0.4
 homepage:            https://github.com/martyall/servant-zeppelin#readme
 license:             BSD3
 license-file:        LICENSE
 author:              Martin Allen, Ben Weitzman
-maintainer:          martin[dot]allen26[at]gmail.co
+maintainer:          martin[dot]allen26[at]gmail.com
 synopsis:            Server library for servant-zeppelin combinators.
 copyright:           2017 Martin Allen, Ben Weitzman
 category:            Web
@@ -23,14 +23,14 @@ library
   ghc-options: -Wall
 
   build-depends:       base >= 4.7 && < 5
-                     , aeson >=0.7 && <1.3
-                     , http-types >=0.8 && <0.10
-                     , singletons >= 2.2 && <2.3
-                     , servant >= 0.10 && <0.12
-                     , servant-server >= 0.10
-                     , servant-zeppelin >= 0.1 && <0.2
-                     , text == 1.2.*
-                     , wai >=3.0 && <3.3
+                     , aeson
+                     , http-types
+                     , singletons
+                     , servant == 0.11
+                     , servant-server == 0.11
+                     , servant-zeppelin
+                     , text
+                     , wai
   default-language:    Haskell2010
 
   default-extensions:  GADTs

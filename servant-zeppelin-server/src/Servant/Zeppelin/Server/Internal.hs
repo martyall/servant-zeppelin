@@ -33,7 +33,7 @@ bindAction :: Delayed env (Handler a)
            -> Delayed env (Handler b)
 bindAction Delayed{..} phi f =
   Delayed
-    { serverD = \c p a b r -> case serverD c p a b r of
+    { serverD = \c p h a b r -> case serverD c p h a b r of
         Route m     -> Route $ m >>= ($$) phi . f
         Fail e      -> Fail e
         FailFatal e -> FailFatal e
