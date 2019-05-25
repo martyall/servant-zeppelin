@@ -16,12 +16,17 @@ import           Data.Aeson
 import           Data.Functor.Identity
 import           Data.Kind
 import           Data.Proxy
-import           Data.Singletons.Prelude hiding ((:>))
+import           Data.Singletons.Prelude hiding (type (*))
 import           Data.Singletons.TypeLits
 import qualified Data.Text                as T
-import           Servant.API
+import           Servant.API             hiding (SBool(..))
 import           Servant.Client
-import           Servant.Common.Req
+import Servant.Client.Core (appendToQueryString)
+
+import           Servant.Client.Core.Internal.Request
+import           Servant.Client.Core.Internal.RunClient (RunClient, runRequest, decodedAs)
+import           Data.Foldable                          (toList)
+import           Data.Sequence                          (fromList)
 
 import           Servant.Zeppelin
 import           Servant.Zeppelin.Internal.Types
@@ -127,8 +132,8 @@ instance {-# OVERLAPPABLE #-} ProjectDependency bs b =>  ProjectDependency (a : 
 -- >   flip runClientM (ClientEnv m burl) $
 -- >     runDepClient (client api aid) SFalse
 
-newtype DepClient (ix :: Bool -> *) (f :: Bool ~> Type) =
-    DepClient {runDepClient :: forall (b :: Bool) . ix b -> Client (Apply f b)}
+newtype DepClient (ix :: Bool -> *) (f :: Bool ~> Type) (m :: * -> *)  =
+    DepClient {runDepClient :: forall (b :: Bool) . ix b -> Client m (Apply f b)}
 
 data SideLoadTerminal :: method -> status -> cts -> a -> deps -> (Bool ~> Type) where
   SideLoadTerminal :: SideLoadTerminal method status cts a deps b
@@ -140,12 +145,25 @@ instance {-# OVERLAPPABLE #-}
          ( MimeUnrender JSON a
          , MimeUnrender JSON (SideLoaded a deps)
          , ReflectMethod method
-         ) => HasClient (Verb method status cts a :> SideLoad deps) where
+         , RunClient m
+         ) => HasClient m (Verb method status cts a :> SideLoad deps) where
 
-  type Client (Verb method status cts a :> SideLoad deps) = DepClient SBool (SideLoadTerminal method status cts a deps)
-  clientWithRoute Proxy req = DepClient $ \sb ->
+  type Client m (Verb method status cts a :> SideLoad deps) = DepClient SBool (SideLoadTerminal method status cts a deps) m
+ -- hoistClientMonad _ _ f ma = f ma
+  clientWithRoute _ _ req = DepClient $ \sb ->
     case sb of
-      STrue -> let req' = appendToQueryString "sideload" (Just "true") req
-               in snd <$> performRequestCT (Proxy @JSON) method req'
-      SFalse -> snd <$> performRequestCT (Proxy @JSON) method req
-    where method = reflectMethod (Proxy @method)
+      STrue -> do
+        let req' = appendToQueryString "sideload" (Just "true") req
+        response <- runRequest req' { requestAccept = fromList $ toList accept
+                                    , requestMethod = method
+                                    }
+        response `decodedAs` (Proxy :: Proxy JSON)
+
+      SFalse -> do
+        response <- runRequest req { requestAccept = fromList $ toList accept
+                                   , requestMethod = method
+                                   }
+        response `decodedAs` (Proxy :: Proxy JSON)
+    where
+      accept = contentTypes (Proxy :: Proxy JSON)
+      method = reflectMethod (Proxy @method)

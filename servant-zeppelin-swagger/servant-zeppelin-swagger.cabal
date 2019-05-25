@@ -20,9 +20,9 @@ library
                      , insert-ordered-containers
                      , lens
                      , singletons
-                     , servant == 0.11
-                     , servant-swagger >= 1.1.2.1
-                     , servant-zeppelin >= 0.1 && < 0.2
+                     , servant
+                     , servant-swagger
+                     , servant-zeppelin
                      , swagger2
                      , text
   default-language:    Haskell2010

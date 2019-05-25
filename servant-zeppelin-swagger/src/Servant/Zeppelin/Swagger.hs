@@ -15,7 +15,8 @@ import qualified Data.HashMap.Strict.InsOrd as O (empty, fromList, insert,
                                                   member)
 import           Data.Kind
 import           Data.Monoid                ((<>))
-import           Data.Promotion.Prelude     hiding ((:>))
+import           Data.Promotion.Prelude     hiding (type (*))
+import           Data.Proxy
 import           Data.Singletons.TypeLits
 import           Data.Swagger
 import           Data.Swagger.Declare

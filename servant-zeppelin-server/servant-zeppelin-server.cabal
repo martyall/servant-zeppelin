@@ -24,11 +24,13 @@ library
 
   build-depends:       base >= 4.7 && < 5
                      , aeson
+                     , bytestring
                      , http-types
                      , singletons
-                     , servant == 0.11
-                     , servant-server == 0.11
+                     , servant
+                     , servant-server
                      , servant-zeppelin
+                     , string-conversions
                      , text
                      , wai
   default-language:    Haskell2010

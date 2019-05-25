@@ -15,7 +15,7 @@ module Servant.Zeppelin.Internal.Types
 
 import           Data.Functor.Identity   (Identity)
 import           Data.Kind
-import           Data.Singletons.Prelude
+import           Data.Singletons.Prelude hiding (type (*))
 
 --------------------------------------------------------------------------------
 -- Dependency Lists

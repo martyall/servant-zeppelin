@@ -18,9 +18,11 @@ library
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , singletons
-                     , servant == 0.11
-                     , servant-client == 0.11
-                     , servant-zeppelin >= 0.1 && <= 0.2
+                     , containers
+                     , servant
+                     , servant-client
+                     , servant-client-core
+                     , servant-zeppelin
                      , text
   default-language:    Haskell2010
   default-extensions:  GADTs

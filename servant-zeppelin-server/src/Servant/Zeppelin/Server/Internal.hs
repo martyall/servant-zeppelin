@@ -1,16 +1,20 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Servant.Zeppelin.Server.Internal where
 
+import qualified Data.ByteString                           as B
 import           Data.List                                 (lookup)
 import           Data.Maybe
 import           Data.Proxy
-import           Data.Singletons.Prelude                   hiding ((:>))
+import           Data.Singletons.Prelude
 import           Data.Singletons.TypeLits
+import           Data.String.Conversions                   (cs)
 import           Network.HTTP.Types
 import           Network.Wai                               (Request,
-                                                            queryString,
+                                                            queryString, responseLBS,
                                                             requestHeaders)
 import           Servant.API
 import           Servant.API.ContentTypes
@@ -64,10 +68,11 @@ methodRouterSideLoad :: ( AllCTRender ctypes (SideLoaded a fs)
                      => Proxy t
                      -> Proxy bs
                      -> t :~> Handler
+                     -> (forall b. b -> ([(HeaderName, B.ByteString)], b))
                      -> Method -> Proxy ctypes -> Status
                      -> Delayed env (Handler a)
                      -> Router env
-methodRouterSideLoad pm pdeps nat method proxy status action =
+methodRouterSideLoad pm pdeps nat splitHeaders method proxy status action =
   leafRouter $ \env request respond ->
     let accH = fromMaybe ct_wildcard $ lookup hAccept $ requestHeaders request
         shouldInflate = checkSideLoadedParam request
@@ -76,13 +81,21 @@ methodRouterSideLoad pm pdeps nat method proxy status action =
                           `addMethodCheck` methodCheck method request
                           `addAcceptCheck ` acceptCheck proxy accH
                         ) env request respond $ \ output -> do
-           let handleA = handleAcceptH proxy (AcceptHeader accH) output
-           processMethodRouter handleA status method Nothing request
+           let (headers, b) = splitHeaders output
+           case handleAcceptH proxy (AcceptHeader accH) b of
+             Nothing -> FailFatal err406 -- this should not happen (checked before), so we make it fatal if it does
+             Just (contentT, body) ->
+               let bdy = if allowedMethodHead method request then "" else body
+               in Route $ responseLBS status ((hContentType, cs contentT) : headers) bdy
          else runAction (action `addMethodCheck` methodCheck method request
                           `addAcceptCheck ` acceptCheck proxy accH
                         ) env request respond $ \ output -> do
-           let handleA = handleAcceptH proxy (AcceptHeader accH) output
-           processMethodRouter handleA status method Nothing request
+           let (headers, b) = splitHeaders output
+           case handleAcceptH proxy (AcceptHeader accH) b of
+             Nothing -> FailFatal err406 -- this should not happen (checked before), so we make it fatal if it does
+             Just (contentT, body) ->
+               let bdy = if allowedMethodHead method request then "" else body
+               in Route $ responseLBS status ((hContentType, cs contentT) : headers) bdy
 
 --------------------------------------------------------------------------------
 -- HasServer instance
@@ -99,8 +112,9 @@ instance ( ReflectMethod method, KnownNat status
          ) => HasServer (Verb method status ctypes a :> SideLoad fs) context where
 
   type ServerT (Verb method status ctypes a :> SideLoad fs) m = m a
+  hoistServerWithContext _ _ nt s = nt s
 
-  route Proxy context = methodRouterSideLoad (Proxy @t) (Proxy @bs) phi method (Proxy @ctypes) status
+  route Proxy context = methodRouterSideLoad (Proxy @t) (Proxy @bs) phi ([],) method (Proxy @ctypes) status
     where method = reflectMethod (Proxy @method)
-          status = toEnum . fromInteger $ natVal (Proxy @status)
+          status = toEnum . fromInteger . toInteger $ natVal (Proxy @status)
           phi = getContextEntry context
