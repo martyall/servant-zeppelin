@@ -133,13 +133,12 @@ instance {-# OVERLAPPABLE #-} ProjectDependency bs b =>  ProjectDependency (a : 
 -- >     runDepClient (client api aid) SFalse
 
 newtype DepClient (ix :: Bool -> *) (f :: Bool ~> Type) (m :: * -> *)  =
-    DepClient {runDepClient :: forall (b :: Bool) . ix b -> Client m (Apply f b)}
+    DepClient {runDepClient :: forall (b :: Bool) . ix b -> m (Apply f b)}
 
 data SideLoadTerminal :: method -> status -> cts -> a -> deps -> (Bool ~> Type) where
   SideLoadTerminal :: SideLoadTerminal method status cts a deps b
 
-type instance Apply (SideLoadTerminal method status cts a deps) b =
-  If b (Verb method status cts (SideLoaded a deps)) (Verb method status cts a)
+type instance Apply (SideLoadTerminal method status cts a deps) b = If b (SideLoaded a deps) a
 
 instance {-# OVERLAPPABLE #-}
          ( MimeUnrender JSON a
@@ -149,7 +148,7 @@ instance {-# OVERLAPPABLE #-}
          ) => HasClient m (Verb method status cts a :> SideLoad deps) where
 
   type Client m (Verb method status cts a :> SideLoad deps) = DepClient SBool (SideLoadTerminal method status cts a deps) m
- -- hoistClientMonad _ _ f ma = f ma
+  hoistClientMonad _ _ f (DepClient g) = DepClient $ f . g
   clientWithRoute _ _ req = DepClient $ \sb ->
     case sb of
       STrue -> do
@@ -158,7 +157,6 @@ instance {-# OVERLAPPABLE #-}
                                     , requestMethod = method
                                     }
         response `decodedAs` (Proxy :: Proxy JSON)
-
       SFalse -> do
         response <- runRequest req { requestAccept = fromList $ toList accept
                                    , requestMethod = method
