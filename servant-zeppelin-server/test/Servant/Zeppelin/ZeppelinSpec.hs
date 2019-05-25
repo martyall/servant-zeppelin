@@ -29,7 +29,8 @@ import           Network.HTTP.Types       (Status, status200, status404)
 import           Network.Wai.Handler.Warp (testWithApplication)
 import           Network.Wreq             (defaults, getWith, header, param,
                                            responseBody, responseStatus)
-import           Servant
+import           Servant                  hiding (header)
+import           Servant.Utils.Enter
 import           Test.Hspec
 import           Test.QuickCheck
 

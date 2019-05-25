@@ -29,11 +29,11 @@ import           Servant.Zeppelin.Server
 
 import           Network.Wai.Handler.Warp (testWithApplication)
 import           System.IO.Unsafe         (unsafePerformIO)
-
+import           Servant.Utils.Enter
 
 import           Network.HTTP.Client      (Manager, defaultManagerSettings,
                                            newManager)
-import           Servant
+import           Servant  hiding (SBool(..))
 import           Servant.Client
 import           Test.Hspec
 import           Test.QuickCheck
@@ -87,7 +87,7 @@ getAlbumClientFull :: Manager
                    -> AlbumId
                    -> IO (Either ServantError (SideLoaded Album AlbumDeps))
 getAlbumClientFull m burl aid =
-  flip runClientM (ClientEnv m burl) $
+  flip runClientM (ClientEnv m burl Nothing) $
     runDepClient (client api aid) STrue
 
 getAlbumClient :: Manager
@@ -95,7 +95,7 @@ getAlbumClient :: Manager
                -> AlbumId
                -> IO (Either ServantError Album)
 getAlbumClient m burl aid =
-  flip runClientM (ClientEnv m burl) $
+  flip runClientM (ClientEnv m burl Nothing) $
     runDepClient (client api aid) SFalse
 
 --------------------------------------------------------------------------------

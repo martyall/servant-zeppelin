@@ -22,7 +22,7 @@ import qualified Data.Text                as T
 import           Servant.API             hiding (SBool(..))
 import           Servant.Client
 import Servant.Client.Core (appendToQueryString)
-
+import           Servant.Utils.Enter
 import           Servant.Client.Core.Internal.Request
 import           Servant.Client.Core.Internal.RunClient (RunClient, runRequest, decodedAs)
 import           Data.Foldable                          (toList)
